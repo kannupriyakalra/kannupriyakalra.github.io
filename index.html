@@ -298,6 +298,128 @@
             transform: translateY(-1px);
         }
 
+        /* Section Divider */
+        .section-divider {
+            margin: 80px 0;
+            position: relative;
+            text-align: center;
+        }
+
+        .section-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent);
+            transform: translateY(-50%);
+        }
+
+        .section-divider-icon {
+            display: inline-block;
+            background: #f8fafc;
+            padding: 0 20px;
+            color: #64748b;
+            font-size: 1.5rem;
+        }
+
+        /* Gallery Section */
+        .gallery-section {
+            margin: 80px 0;
+        }
+
+        .gallery-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .gallery-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 16px;
+            letter-spacing: -0.025em;
+        }
+
+        .gallery-header p {
+            font-size: 1.125rem;
+            color: #64748b;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .gallery-item {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .gallery-item:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 300px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gallery-upload {
+            background: #ffffff;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 48px 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .gallery-upload:hover {
+            border-color: #9ca3af;
+            background: #f9fafb;
+        }
+
+        .gallery-upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+        }
+
+        .gallery-upload h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .gallery-upload p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
         @keyframes fadeInUp {
             to {
                 opacity: 1;
@@ -348,6 +470,15 @@
             .filter-tab {
                 font-size: 0.75rem;
                 padding: 10px 16px;
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .gallery-header h2 {
+                font-size: 1.75rem;
             }
         }
 
@@ -529,6 +660,64 @@
                 </div>
             </div>
         </div>
+
+        <!-- Section Divider -->
+        <div class="section-divider">
+            <span class="section-divider-icon">📸</span>
+        </div>
+
+        <!-- Gallery Section -->
+        <section class="gallery-section">
+            <div class="gallery-header">
+                <h2>Gallery</h2>
+                <p>Behind the scenes moments from conferences, meetups, and tech events around the world</p>
+            </div>
+
+            <div class="gallery-grid">
+                <!-- Sample Gallery Items -->
+                <div class="gallery-item">
+                    <div class="gallery-image" style="background-image: url('assets/LLM4S/llm4s_logo.png');">
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image" style="background-image: url('assets/LLM4S/llm4s_logo.png');">
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image" style="background-image: url('assets/LLM4S/llm4s_logo.png');">
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image" style="background-image: url('assets/LLM4S/llm4s_logo.png');">
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image" style="background-image: url('assets/LLM4S/llm4s_logo.png');">
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image" style="background-image: url('assets/LLM4S/llm4s_logo.png');">
+                    </div>
+                </div>
+
+                <!-- Upload placeholder for future photos -->
+                <div class="gallery-upload">
+                    <div class="gallery-upload-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                            <circle cx="12" cy="13" r="3"></circle>
+                        </svg>
+                    </div>
+                    <h3>More Photos Coming Soon</h3>
+                    <p>Stay tuned for more moments from upcoming conferences and events</p>
+                </div>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -582,9 +771,9 @@
 
         // Smooth scroll animation on load
         window.addEventListener('load', () => {
-            const items = document.querySelectorAll('.timeline-item');
+            const items = document.querySelectorAll('.timeline-item, .gallery-item');
             items.forEach((item, index) => {
-                item.style.animationDelay = `${index * 0.2}s`;
+                item.style.animationDelay = `${index * 0.1}s`;
             });
         });
 
@@ -603,8 +792,22 @@
             });
         }, observerOptions);
 
-        timelineItems.forEach(item => {
+        // Observe both timeline and gallery items
+        const animatedItems = document.querySelectorAll('.timeline-item, .gallery-item');
+        animatedItems.forEach(item => {
             observer.observe(item);
+        });
+
+        // Gallery hover effects
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        galleryItems.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.style.transform = 'translateY(-8px)';
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'translateY(0)';
+            });
         });
     </script>
 </body>
