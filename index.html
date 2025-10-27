@@ -1,611 +1,509 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kannu Priya Kalra - Speaking & Open Source</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern Portfolio | Dark Theme</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { primary: '#0ea5e9', secondary: '#7e22ce', dark: '#0f172a', darker: '#020617' },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
         }
+      }
+    }
+  </script>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: #f8fafc;
-            min-height: 100vh;
-            color: #1e293b;
-            line-height: 1.6;
+ 
+
+  <script>
+    (function(){
+      const popup = document.getElementById('conf-popup');
+      const titleEl = document.getElementById('conf-popup-title');
+      const linksEl = document.getElementById('conf-popup-links');
+      let activeLinks = [];
+
+      function showPopup(x,y, title, links){
+        titleEl.textContent = title || 'Conference Details';
+        linksEl.innerHTML = '';
+        activeLinks = Array.isArray(links) ? links : [];
+        if(activeLinks.length === 0){ linksEl.innerHTML = '<div class="text-slate-400">No links available</div>'; }
+        else activeLinks.forEach((u,i)=>{
+          const a = document.createElement('a'); a.href = u; a.textContent = (u.length>60? u.slice(0,57)+'...' : u); a.target='_blank'; a.rel='noopener'; a.style.color='var(--text)'; a.style.textDecoration='underline'; a.style.padding='4px 0'; linksEl.appendChild(a);
+        });
+        popup.style.left = (x + 8) + 'px';
+        popup.style.top = (y + 8) + 'px';
+        popup.classList.remove('hidden');
+      }
+
+      function hidePopup(){ popup.classList.add('hidden'); activeLinks = []; }
+
+      document.addEventListener('click', function(e){
+        // Delegate to Conference Details buttons
+        const btn = e.target.closest && e.target.closest('.conf-details-btn');
+        if(btn){
+          e.preventDefault();
+          const links = JSON.parse(decodeURIComponent(btn.getAttribute('data-links')||'[]'));
+          const title = btn.getAttribute('data-title') || 'Conference Details';
+          const rect = btn.getBoundingClientRect();
+          showPopup(rect.left + window.scrollX, rect.bottom + window.scrollY, title, links);
+          return;
         }
+        // Click outside popup -> hide
+        if(!e.target.closest || !e.target.closest('#conf-popup')) hidePopup();
+      }, true);
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+      // Buttons
+      document.getElementById('conf-copy').addEventListener('click', ()=>{
+        if(!activeLinks.length) return;
+        const text = activeLinks.join('\n');
+        navigator.clipboard.writeText(text).then(()=>{ alert('Link(s) copied'); hidePopup(); }, ()=>{ alert('Copy failed'); });
+      });
+      document.getElementById('conf-open').addEventListener('click', ()=>{
+        if(!activeLinks.length) return; window.open(activeLinks[0], '_blank'); hidePopup();
+      });
+      document.getElementById('conf-open-same').addEventListener('click', ()=>{
+        if(!activeLinks.length) return; window.location.href = activeLinks[0];
+      });
 
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 0;
-        }
+      // ESC to close
+      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') hidePopup(); });
+    })();
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        .profile {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 48px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 48px;
-        }
+    :root { --icon-size:50px; --icon-bg:rgba(255,255,255,.95); }
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .floating-icons-container{position:absolute;width:280px;height:280px;top:50%;left:50%;transform:translate(-50%,-50%)}
+    .floating-icon{position:absolute;width:var(--icon-size);height:var(--icon-size);background:var(--icon-bg);backdrop-filter:blur(5px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.75rem;box-shadow:0 8px 16px rgba(0,0,0,.1)}
+    .orbit-1{top:-25px;left:-25px;animation:float 3s ease-in-out infinite}
+    .orbit-2{top:-25px;right:-25px;animation:float 3s ease-in-out infinite .75s}
+    .orbit-3{bottom:-25px;left:-25px;animation:float 3s ease-in-out infinite 1.5s}
+    .orbit-4{bottom:-25px;right:-25px;animation:float 3s ease-in-out infinite 2.25s}
+    body{font-family:'Inter',sans-serif;background-color:#0f172a;color:#e2e8f0}
+    .gradient-text{background:linear-gradient(90deg,#0ea5e9,#7e22ce);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .card-hover{transition:all .3s ease}
+    .card-hover:hover{transform:translateY(-5px);box-shadow:0 10px 25px rgba(14,165,233,.2)}
+    .nav-link{position:relative}
+    .nav-link::after{content:'';position:absolute;width:0;height:2px;bottom:-2px;left:0;background:linear-gradient(90deg,#0ea5e9,#7e22ce);transition:width .3s ease}
+    .nav-link:hover::after{width:100%}
+    .active::after{width:100%}
+    .skill-bar{height:8px;border-radius:4px;background-color:#1e293b}
+    .skill-progress{height:100%;border-radius:4px;background:linear-gradient(90deg,#0ea5e9,#7e22ce);transition:width 1s ease-in-out}
+    .project-card{background:linear-gradient(145deg,#1e293b,#0f172a);box-shadow:5px 5px 15px rgba(2,6,23,.5),-5px -5px 15px rgba(30,41,59,.5)}
+    .contact-input{background-color:#1e293b;border:1px solid #334155;transition:all .3s ease}
+    .contact-input:focus{border-color:#0ea5e9;box-shadow:0 0 0 2px rgba(14,165,233,.2)}
+    .btn-primary{background:linear-gradient(90deg,#0ea5e9,#7e22ce);transition:all .3s ease}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(14,165,233,.3)}
+    .social-icon{transition:all .3s ease}
+    .social-icon:hover{transform:translateY(-3px)}
 
-        .profile h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 12px;
-            letter-spacing: -0.025em;
-        }
-
-        .profile .subtitle {
-            font-size: 1.125rem;
-            color: #64748b;
-            margin-bottom: 32px;
-            font-weight: 400;
-        }
-
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .social-links a {
-            padding: 12px 24px;
-            background: #475569;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-        }
-
-        .social-links a:hover {
-            background: #334155;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .filter-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 4px;
-            margin-bottom: 48px;
-            flex-wrap: wrap;
-        }
-
-        .filter-tab {
-            padding: 12px 20px;
-            background: #ffffff;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .filter-tab.active {
-            background: #1e293b;
-            color: white;
-            border-color: #1e293b;
-        }
-
-        .filter-tab:hover:not(.active) {
-            background: #f3f4f6;
-            border-color: #9ca3af;
-        }
-
-        .timeline {
-            position: relative;
-            padding: 20px 0;
-        }
-
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #e2e8f0;
-            transform: translateX(-50%);
-        }
-
-        .year-section {
-            margin-bottom: 60px;
-        }
-
-        .year-header {
-            text-align: center;
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        .year-header h2 {
-            display: inline-block;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            padding: 16px 32px;
-            border-radius: 8px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #0f172a;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            position: relative;
-            z-index: 2;
-        }
-
-        .timeline-item {
-            position: relative;
-            margin-bottom: 40px;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 0.8s ease forwards;
-        }
-
-        .timeline-item:nth-child(odd) {
-            text-align: right;
-            padding-right: calc(50% + 30px);
-        }
-
-        .timeline-item:nth-child(even) {
-            text-align: left;
-            padding-left: calc(50% + 30px);
-        }
-
-        .timeline-content {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            position: relative;
-            transition: all 0.2s ease;
-        }
-
-        .timeline-content:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-color: #cbd5e1;
-        }
-
-        .timeline-content::before {
-            content: '';
-            position: absolute;
-            top: 24px;
-            width: 0;
-            height: 0;
-            border: 8px solid transparent;
-        }
-
-        .timeline-item:nth-child(odd) .timeline-content::before {
-            right: -16px;
-            border-left-color: #ffffff;
-        }
-
-        .timeline-item:nth-child(even) .timeline-content::before {
-            left: -16px;
-            border-right-color: #ffffff;
-        }
-
-        .timeline-dot {
-            position: absolute;
-            left: 50%;
-            top: 24px;
-            width: 12px;
-            height: 12px;
-            background: #ffffff;
-            border: 3px solid #64748b;
-            border-radius: 50%;
-            transform: translateX(-50%);
-            z-index: 2;
-            transition: all 0.2s ease;
-        }
-
-        .timeline-item:hover .timeline-dot {
-            border-color: #1e293b;
-            transform: translateX(-50%) scale(1.1);
-        }
-
-        .item-date {
-            color: #64748b;
-            font-weight: 500;
-            font-size: 0.875rem;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .item-title {
-            font-size: 1.25rem;
-            color: #0f172a;
-            margin-bottom: 12px;
-            font-weight: 600;
-            line-height: 1.4;
-        }
-
-        .item-type {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .speaking {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .opensource {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .item-description {
-            color: #475569;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            font-size: 0.875rem;
-        }
-
-        .item-links {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .timeline-item:nth-child(odd) .item-links {
-            justify-content: flex-end;
-        }
-
-        .item-link {
-            padding: 8px 16px;
-            background: #f1f5f9;
-            color: #475569;
-            text-decoration: none;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .item-link:hover {
-            background: #1e293b;
-            color: white;
-            border-color: #1e293b;
-            transform: translateY(-1px);
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .profile h1 {
-                font-size: 2rem;
-            }
-
-            .profile {
-                padding: 32px 24px;
-            }
-
-            .timeline::before {
-                left: 24px;
-            }
-
-            .timeline-item {
-                text-align: left !important;
-                padding-left: 48px !important;
-                padding-right: 0 !important;
-            }
-
-            .timeline-content::before {
-                left: -16px !important;
-                right: auto !important;
-                border-right-color: #ffffff !important;
-                border-left-color: transparent !important;
-            }
-
-            .timeline-dot {
-                left: 24px !important;
-                transform: translateX(-50%);
-            }
-
-            .item-links {
-                justify-content: flex-start !important;
-            }
-
-            .filter-tabs {
-                gap: 8px;
-                padding: 0 16px;
-            }
-
-            .filter-tab {
-                font-size: 0.75rem;
-                padding: 10px 16px;
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .fade-in {
-            animation-delay: 0.2s;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #64748b;
-        }
-
-        .empty-state h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #374151;
-        }
-    </style>
+    /* Compact upcoming cards (3 inline on md+) */
+    #upcoming-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:1.25rem}
+    @media (min-width:768px){#upcoming-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    #upcoming-grid .bg-slate-800.rounded-xl.p-6{padding:.75rem;min-height:240px}
+    #upcoming-grid .w-16.h-16{width:3rem;height:3rem}
+    #upcoming-grid .fas.fa-calendar-alt{font-size:1.05rem}
+    #upcoming-grid h3{font-size:1rem;margin-top:.25rem}
+    #upcoming-grid .space-y-3>div p{font-size:.95rem}
+  </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <div class="profile">
-                <h1>Kannupriya Kalra</h1>
-                <p class="subtitle">Scala Developer | AI/LLM Researcher | International Tech Speaker</p>
-                <div class="social-links">
-                    <a href="https://github.com/kannupriyakalra" target="_blank">GitHub</a>
-                    <a href="https://linkedin.com/in/kannupriyakalra" target="_blank">LinkedIn</a>
-                    <a href="https://twitter.com/kannupriyakalra" target="_blank">Twitter</a>
-                </div>
-            </div>
-        </header>
-
-        <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="all">All Activities</button>
-            <button class="filter-tab" data-filter="speaking">Speaking Engagements</button>
-            <button class="filter-tab" data-filter="opensource">Open Source</button>
+<body class="bg-dark text-slate-200">
+  <!-- Navigation -->
+  <nav class="fixed w-full bg-darker/80 backdrop-blur-sm z-50 shadow-lg">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <!-- Left: mobile menu toggle -->
+        <div class="flex items-center md:hidden">
+          <button id="menu-toggle" class="text-slate-200 hover:text-primary focus:outline-none" aria-label="Toggle menu">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
         </div>
 
-        <div class="timeline" id="timeline">
-            <!-- 2025 Section -->
-            <div class="year-section" data-year="2025">
-                <div class="year-header">
-                    <h2>2025</h2>
-                </div>
-                
-                <div class="timeline-item" data-type="speaking">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">August 21, 2025</div>
-                        <div class="item-type speaking">Speaking</div>
-                        <h3 class="item-title">Scala Days 2025 - "Scala Meets GenAI: Build the Cool Stuff with LLM4S"</h3>
-                        <p class="item-description">Co-presenting with Rory Graves at SwissTech Convention Center, EPFL campus, Lausanne, Switzerland. Exploring the intersection of Scala and Generative AI.</p>
-                        <div class="item-links">
-                            <a href="https://scaladays.org/editions/2025/talks/scala-meets-genai-build-the" class="item-link" target="_blank">Talk Info</a>
-                            <a href="https://www.linkedin.com/feed/update/urn:li:activity:7348123421945262080/" class="item-link" target="_blank">LinkedIn</a>
-                            <a href="https://x.com/KannupriyaKalra/status/1942369453267947900" class="item-link" target="_blank">Twitter</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item" data-type="speaking">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">August 13, 2025</div>
-                        <div class="item-type speaking">Speaking</div>
-                        <h3 class="item-title">London Scala Users Group - "Scala Meets GenAI: Build the Cool Stuff with LLM4S"</h3>
-                        <p class="item-description">Co-presenting with Rory Graves at The Trade Desk office, London, UK. Deep dive into using Scala for GenAI applications.</p>
-                        <div class="item-links">
-                            <a href="#" class="item-link">Event Details (TBA)</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item" data-type="speaking">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">June 13, 2025</div>
-                        <div class="item-type speaking">Speaking</div>
-                        <h3 class="item-title">Dallas Scala Enthusiasts - "Let's Teach LLMs to Write Great Scala!"</h3>
-                        <p class="item-description">Updated version of my popular talk, presented in Dallas, Texas, USA. Exploring how to improve LLM performance for Scala code generation.</p>
-                        <div class="item-links">
-                            <a href="https://www.meetup.com/dallas-scala-enthusiasts/events/307717420/" class="item-link" target="_blank">Meetup</a>
-                            <a href="https://www.youtube.com/watch?v=-PnsSSWTye0&ab_channel=DallasScalaEnthusiasts" class="item-link" target="_blank">Recording</a>
-                            <a href="https://www.linkedin.com/posts/kannupriyakalra_scala-ai-llm4s-activity-7338339521807212544-t5gT" class="item-link" target="_blank">LinkedIn</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item" data-type="speaking">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">May 28, 2025</div>
-                        <div class="item-type speaking">Speaking</div>
-                        <h3 class="item-title">Functional World 2025 by Scalac - "Let's Teach LLMs to Write Great Scala!"</h3>
-                        <p class="item-description">Updated version of my talk presented in Gdansk, Poland. Featured in Scalendar newsletter and Scala Times.</p>
-                        <div class="item-links">
-                            <a href="https://www.meetup.com/functionalworld/events/307654612/?eventOrigin=group_upcoming_events" class="item-link" target="_blank">Meetup</a>
-                            <a href="https://www.youtube.com/watch?v=cNAmsIpSsgk&ab_channel=Scalac" class="item-link" target="_blank">Recording</a>
-                            <a href="https://www.linkedin.com/posts/scalac_ai-functionalworld-scala-ugcPost-7326538223818563584-U2Ru?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM" class="item-link" target="_blank">LinkedIn 1</a>
-                            <a href="https://www.linkedin.com/posts/scalac_lets-teach-llms-to-write-great-scala-ugcPost-7332752921190625281-K2YD?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM" class="item-link" target="_blank">LinkedIn 2</a>
-                            <a href="https://www.reddit.com/r/scala/comments/1krvvgv/meetup_lets_teach_llms_to_write_great_scala/" class="item-link" target="_blank">Reddit</a>
-                            <a href="https://x.com/FunctionalWorld/status/1920776605015674943" class="item-link" target="_blank">Twitter</a>
-                            <a href="https://www.linkedin.com/pulse/scalendar-may-2025-scalac-qck6e/?trackingId=aSO5CkxeSB2O0U4GPUxJuw%3D%3D" class="item-link" target="_blank">Newsletter</a>
-                            <a href="https://scalatimes.com/ead904f5c2" class="item-link" target="_blank">Scala Times 1</a>
-                            <a href="https://scalatimes.com/af935bf2d5" class="item-link" target="_blank">Scala Times 2</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item" data-type="speaking">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">April 20, 2025</div>
-                        <div class="item-type speaking">Speaking</div>
-                        <h3 class="item-title">Scala India - "Let's Teach LLMs to Write Great Scala!"</h3>
-                        <p class="item-description">Updated version of my February talk, presented virtually for the Scala India community. Focused on improving LLM performance for Scala development.</p>
-                        <div class="item-links">
-                            <a href="https://www.linkedin.com/posts/activity-7318299169914249216-Sec-" class="item-link" target="_blank">Event Info</a>
-                            <a href="https://www.youtube.com/watch?v=PiUaVKuV0dM&ab_channel=ScalaIndia" class="item-link" target="_blank">Recording</a>
-                            <a href="https://www.reddit.com/r/scala/comments/1k0r1c7/upcoming_scala_india_talk_on_topic_lets_teach/" class="item-link" target="_blank">Reddit</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item" data-type="speaking">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">February 25, 2025</div>
-                        <div class="item-type speaking">Speaking</div>
-                        <h3 class="item-title">Bay Area Scala - "Let's Teach LLMs to Write Great Scala!" (Original version)</h3>
-                        <p class="item-description">First presentation of my talk at Tubi office, San Francisco, CA. This original version sparked great discussions across Reddit, Mastodon, and other platforms.</p>
-                        <div class="item-links">
-                            <a href="https://lu.ma/5fz2y9or" class="item-link" target="_blank">Event Info</a>
-                            <a href="https://www.youtube.com/watch?v=SXybj2P3_DE&t=779s" class="item-link" target="_blank">Recording</a>
-                            <a href="https://www.reddit.com/r/scala/comments/1ipr596/scala_meetup_san_francisco_designing_the_library/" class="item-link" target="_blank">Reddit</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add sections for open source contributions -->
-            <div class="year-section" data-year="opensource">
-                <div class="year-header">
-                    <h2>Open Source Projects</h2>
-                </div>
-                
-                <div class="timeline-item" data-type="opensource">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">Ongoing</div>
-                        <div class="item-type opensource">Open Source</div>
-                        <h3 class="item-title">LLM4S - Scala Library for LLM Integration</h3>
-                        <p class="item-description">Working on tools and libraries to improve Large Language Model integration with Scala, focusing on code generation and developer experience.</p>
-                        <div class="item-links">
-                            <a href="#" class="item-link">GitHub (Coming Soon)</a>
-                            <a href="#" class="item-link">Documentation</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="timeline-item" data-type="opensource">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="item-date">Ongoing</div>
-                        <div class="item-type opensource">Open Source</div>
-                        <h3 class="item-title">Scala Community Contributions</h3>
-                        <p class="item-description">Active contributor to various Scala projects and community initiatives. Focused on improving tooling and developer experience.</p>
-                        <div class="item-links">
-                            <a href="https://github.com/kannupriyakalra" class="item-link" target="_blank">GitHub Profile</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Center: nav links (centered on desktop) -->
+        <div class="flex-1 flex justify-center">
+          <div class="hidden md:flex space-x-8 items-center">
+            <a href="#home" class="nav-link active">Home</a>
+            <a href="#about" class="nav-link">About</a>
+            <a href="#events" class="nav-link">Events</a>
+            <a href="#projects" class="nav-link">Projects</a>
+            <a href="#contact" class="nav-link">Contact</a>
+          </div>
         </div>
+
+        <!-- Right: social/media icons (desktop) -->
+        <div class="hidden md:flex items-center space-x-4">
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary text-slate-200" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="LinkedIn">
+            <i class="fab fa-linkedin-in"></i>
+          </a>
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-400 text-slate-200" aria-label="Twitter">
+            <i class="fab fa-twitter"></i>
+          </a>
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Dribbble">
+            <i class="fab fa-dribbble"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Mobile Menu (kept below for flow) -->
+      <div id="mobile-menu" class="hidden md:hidden mt-4 pb-2">
+        <a href="#home" class="block py-2 nav-link active">Home</a>
+        <a href="#about" class="block py-2 nav-link">About</a>
+        <a href="#events" class="block py-2 nav-link">Events</a>
+        <a href="#projects" class="block py-2 nav-link">Projects</a>
+        <a href="#contact" class="block py-2 nav-link">Contact</a>
+      </div>
     </div>
+  </nav>
 
-    <script>
-        // Filter functionality
-        const filterTabs = document.querySelectorAll('.filter-tab');
-        const timelineItems = document.querySelectorAll('.timeline-item');
+  <!-- Hero -->
+  <section id="home" class="min-h-screen flex items-center pt-20">
+    <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between">
+      <div class="md:w-1/2 mb-12 md:mb-0 md:pr-6 lg:pr-8">
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4">Hi, I'm <span class="gradient-text">Kannupriya</span></h1>
+        <h2 class="text-2xl md:text-3xl lg:text-4xl font-semibold mb-6 text-slate-300">Engineering Leader</h2>
+        <p class="text-lg md:text-xl mb-8 text-slate-400 max-w-xl leading-relaxed">I’m an engineering leader with 10+ years of experience building scalable AI and backend systems. I specialize in Scala, functional programming, and practical AI development.</p>
+        <div class="flex mt-8 space-x-4">
+          <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary"><i class="fab fa-github"></i></a>
+          <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-400"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600"><i class="fab fa-dribbble"></i></a>
+        </div>
+      </div>
+      <div class="md:w-1/2 flex justify-center">
+        <div class="relative w-80 h-80 md:w-[28rem] md:h-[28rem] lg:w-[36rem] lg:h-[36rem]">
+          <div class="floating-icons-container">
+            <div class="floating-icon orbit-1 text-2xl text-blue-500 hidden md:block"><i class="fab fa-react"></i></div>
+            <div class="floating-icon orbit-2 text-2xl text-yellow-500 hidden md:block"><i class="fab fa-js"></i></div>
+            <div class="floating-icon orbit-3 text-2xl text-blue-600 hidden md:block"><i class="fab fa-css3-alt"></i></div>
+            <div class="floating-icon orbit-4 text-2xl text-orange-500 hidden md:block"><i class="fab fa-html5"></i></div>
+          </div>
+          <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-secondary blur-xl opacity-20"></div>
+          <img src="images/priya_hero_2.png" alt="Profile" class="relative w-full h-full object-cover rounded-full border-4 border-slate-800 floating">
+        </div>
+      </div>
+    </div>
+  </section>
 
-        filterTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Remove active class from all tabs
-                filterTabs.forEach(t => t.classList.remove('active'));
-                // Add active class to clicked tab
-                tab.classList.add('active');
+  <!-- About -->
+  <section id="about" class="py-20 bg-darker">
+    <div class="container mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">About <span class="gradient-text">Me</span></h2>
+        <div class="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto"></div>
+      </div>
+      <div class="flex flex-col md:flex-row items-center">
+        <div class="md:w-1/3 mb-8 md:mb-0 flex justify-center">
+          <div class="relative w-80 h-96 md:w-96 md:h-[30rem]">
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-secondary blur-xl opacity-20"></div>
+            <img src="images/priya_about.png" alt="About" class="relative w-full h-full object-cover rounded-2xl shadow-2xl">
+          </div>
+        </div>
+        <div class="md:w-2/3 md:pl-12">
+          <h3 class="text-2xl font-bold mb-6">Who am I?</h3>
+          <p class="text-slate-400 mb-6">I’m a dedicated engineering leader with 10+ years of experience designing reliable, high-performance systems. I specialize in functional Scala, AI platforms, and scalable backend development.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <h4 class="font-semibold mb-2">Name: <span class="text-slate-300">Kannupriya, Karla</span></h4>
+              <h4 class="font-semibold mb-2">Email: <span class="text-slate-300">Kannupriyakarla@gmail.com</span></h4>
+              <h4 class="font-semibold mb-2">Phone: <span class="text-slate-300">+1 (555) 123-4567</span></h4>
+            </div>
+            <div>
+              <h4 class="font-semibold mb-2"><span class="text-slate-300"></span></h4>
+              <h4 class="font-semibold mb-2">Experience: <span class="text-slate-300">10+ Years</span></h4>
+              <h4 class="font-semibold mb-2"><span class="text-slate-300"></span></h4>
+            </div>
+          </div>
+          <div class="flex space-x-4">
+            <a href="#" class="px-6 py-3 rounded-full btn-primary font-medium">Download CV</a>
+            <a href="#contact" class="px-6 py-3 rounded-full border border-primary text-primary font-medium hover:bg-primary/10 transition">Contact Me</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-                const filter = tab.getAttribute('data-filter');
-                
-                timelineItems.forEach((item, index) => {
-                    if (filter === 'all' || item.getAttribute('data-type') === filter) {
-                        item.classList.remove('hidden');
-                        // Stagger animation
-                        setTimeout(() => {
-                            item.style.animationDelay = `${index * 0.1}s`;
-                        }, 50);
-                    } else {
-                        item.classList.add('hidden');
-                    }
-                });
+  <!-- Events / Conferences (dynamic) -->
+  <section id="events" class="py-20 bg-dark">
+    <div class="container mx-auto px-6">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Conference & <span class="gradient-text">Events</span></h2>
+        <div class="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto"></div>
+      </div>
 
-                // Check if any items are visible
-                const visibleItems = document.querySelectorAll('.timeline-item:not(.hidden)');
-                const timeline = document.getElementById('timeline');
-                
-                if (visibleItems.length === 0) {
-                    if (!document.querySelector('.empty-state')) {
-                        const emptyState = document.createElement('div');
-                        emptyState.className = 'empty-state';
-                        emptyState.innerHTML = `
-                            <h3>No items found</h3>
-                            <p>Check back later for more ${filter === 'all' ? 'activities' : filter} content!</p>
-                        `;
-                        timeline.appendChild(emptyState);
-                    }
-                } else {
-                    const emptyState = document.querySelector('.empty-state');
-                    if (emptyState) {
-                        emptyState.remove();
-                    }
-                }
-            });
-        });
+      <!-- Tabs -->
+      <div class="flex justify-center gap-3 mb-8">
+        <button id="tab-upcoming" class="px-6 py-2 rounded-full bg-primary text-white transition-colors">Upcoming</button>
+        <button id="tab-past" class="px-6 py-2 rounded-full bg-slate-700 text-white hover:bg-primary transition-colors">Past</button>
+      </div>
 
-        // Smooth scroll animation on load
-        window.addEventListener('load', () => {
-            const items = document.querySelectorAll('.timeline-item');
-            items.forEach((item, index) => {
-                item.style.animationDelay = `${index * 0.2}s`;
-            });
-        });
+      <!-- Grids -->
+      <div id="panel-upcoming">
+        <div id="upcoming-grid" class="grid grid-cols-1 md:grid-cols-3 gap-5"></div>
+        <p id="empty-upcoming" class="text-center text-slate-400 mt-6 hidden">No upcoming events.</p>
+        <div id="pager-upcoming" class="flex justify-center mt-8 gap-2"></div>
+      </div>
 
-        // Add intersection observer for better animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
+      <div id="panel-past" class="hidden">
+        <div id="past-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <p id="empty-past" class="text-center text-slate-400 mt-6 hidden">No past events.</p>
+        <div id="pager-past" class="flex justify-center mt-8 gap-2"></div>
+      </div>
+    </div>
+  </section>
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
+  <!-- Contact (Let's Talk) -->
+  <section id="contact" class="py-28 bg-darker">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col lg:flex-row items-center justify-between">
+        <!-- Left large heading/text -->
+        <div class="lg:w-2/3 mb-10 lg:mb-0">
+          <p class="text-lg text-slate-300 mb-4">I'm excited to connect and collaborate with you on innovative strategies that will shape the future of your brand.</p>
+          <h2 class="text-6xl lg:text-8xl font-extrabold leading-tight">Let's Talk <span class="gradient-text ml-3">↗</span></h2>
+        </div>
 
-        timelineItems.forEach(item => {
-            observer.observe(item);
-        });
-    </script>
+        <!-- Right: contact email + social icons -->
+        <div class="lg:w-1/3 flex flex-col items-start lg:items-end">
+          <a href="mailto:Kannupriyakarla@gmail.com" class="flex items-center text-lg text-slate-200 hover:text-primary mb-6">
+            <span class="inline-flex items-center justify-center w-12 h-12 mr-3 rounded-lg bg-slate-800 text-2xl"><i class="fas fa-envelope"></i></span>
+            Kannupriyakarla@gmail.com
+          </a>
+          <div class="flex items-center gap-4">
+            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary text-slate-200" aria-label="X/Twitter"><i class="fab fa-x-twitter"></i></a>
+            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-red-600 text-slate-200" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-600 text-slate-200" aria-label="Bookmarks"><i class="fas fa-bookmark"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-darker py-12">
+    <div class="container mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-6 md:mb-0">
+          <p class="text-slate-400 mt-2">© 2025 Kannupriya Karla. All rights reserved.</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-slate-400 hover:text-primary transition"><i class="fab fa-github text-xl"></i></a>
+          <a href="#" class="text-slate-400 hover:text-blue-600 transition"><i class="fab fa-linkedin-in text-xl"></i></a>
+          <a href="#" class="text-slate-400 hover:text-blue-400 transition"><i class="fab fa-twitter text-xl"></i></a>
+          <a href="#" class="text-slate-400 hover:text-pink-600 transition"><i class="fab fa-dribbble text-xl"></i></a>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 mt-8 pt-8 text-center text-slate-500">
+        <p>Made with <i class="fas fa-heart text-red-500"></i> and lots of <i class="fas fa-coffee text-amber-500"></i></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to Top -->
+  <button id="back-to-top" class="fixed bottom-8 right-8 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-lg hidden">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <script>
+    // --- Basic nav + back-to-top ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuToggle.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click', e=>{
+        e.preventDefault();
+        const id = a.getAttribute('href');
+        const el = document.querySelector(id);
+        if (!el) return;
+        window.scrollTo({ top: el.offsetTop - 80, behavior:'smooth' });
+        if (!mobileMenu.classList.contains('hidden')) mobileMenu.classList.add('hidden');
+        document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+        const link = document.querySelector(`.nav-link[href="${id}"]`);
+        if (link) link.classList.add('active');
+      });
+    });
+
+    window.addEventListener('scroll', ()=>{
+      const y = window.scrollY;
+      document.querySelectorAll('section').forEach(s=>{
+        const top = s.offsetTop - 100, bottom = top + s.offsetHeight;
+        const active = (y >= top && y < bottom);
+        const nav = document.querySelector(`.nav-link[href="#${s.id}"]`);
+        if (nav) nav.classList.toggle('active', active);
+      });
+      document.getElementById('back-to-top').classList.toggle('hidden', y <= 300);
+    });
+
+    document.getElementById('back-to-top').addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+
+    // ---------------- Events logic ----------------
+    const PER_PAGE = 9;
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Schema: id, date(YYYY-MM-DD), title, description, location, hosts[], details[] (<=7), featured[]
+    const EVENTS = [
+      // UPCOMING (examples)
+      {id:101, date:"2025-12-15", title:"ICSE 2025", description:"Advanced Software Engineering Methodologies in AI Era", location:"Nashville, TN", hosts:["Dr. John Smith"], details:["https://conf.example.com/icse2025"], featured:["ACM DL","IEEE Xplore"]},
+      {id:102, date:"2025-11-28", title:"AI Summit 2025", description:"The Future of AI in Education: A New Paradigm", location:"Stanford University, CA", hosts:["Dr. Sarah Johnson"], details:["https://conf.example.com/ai-summit-2025"], featured:["Nature AI","Science Digital"]},
+      {id:103, date:"2025-11-10", title:"Global Tech Forum", description:"Building Scalable Systems for the Next Decade", location:"Tokyo, Japan", hosts:["Dr. Emily Chen"], details:["https://conf.example.com/gtf2025"], featured:["Tech Proceedings","Digital Archives"]},
+
+      // PAST (18 items to guarantee 2 pages)
+      {id:1, date:"2025-10-15", title:"DevOps Summit", description:"Modern DevOps Practices in Cloud Native Applications", location:"Seattle, WA", hosts:["Dr. Michael Zhang"], details:["#"], featured:["CNCF"]},
+      {id:2, date:"2025-10-05", title:"ML Conference", description:"Advances in Neural Network Architectures", location:"Cambridge, MA", hosts:["Dr. Lisa Anderson"], details:["#"], featured:["NeurOnline"]},
+      {id:3, date:"2025-09-25", title:"Web Security Conference", description:"Zero-Trust Architecture Implementation", location:"London, UK", hosts:["Dr. James Wilson"], details:["#"], featured:["OWASP"]},
+      {id:4, date:"2025-09-15", title:"Cloud Native Summit", description:"Scaling Microservices Architecture", location:"Singapore", hosts:["Dr. Robert Chang"], details:["#"], featured:["Kubernetes"]},
+      {id:5, date:"2025-08-25", title:"Data Science Forum", description:"LLMs: Present and Future", location:"Stanford, CA", hosts:["Dr. Sarah Lee"], details:["#"], featured:["DSJ"]},
+      {id:6, date:"2025-08-15", title:"Edge Computing Summit", description:"Edge AI Implementation Strategies", location:"Tokyo, Japan", hosts:["Dr. Michael Brown"], details:["#"], featured:["SIGMobile"]},
+      {id:7, date:"2025-07-25", title:"Quantum Computing Forum", description:"Quantum Algorithms for ML", location:"Cambridge, MA", hosts:["Dr. Elena Rodriguez"], details:["#"], featured:["QML"]},
+      {id:8, date:"2025-07-15", title:"Blockchain Conference", description:"Enterprise Blockchain Solutions", location:"Dubai, UAE", hosts:["Dr. David Kim"], details:["#"], featured:["LedgerWorks"]},
+      {id:9, date:"2025-07-05", title:"AI Ethics Symposium", description:"Responsible AI Development", location:"Oxford, UK", hosts:["Dr. Maria Chen"], details:["#"], featured:["RAI"]},
+      {id:10, date:"2025-06-25", title:"Security Conference", description:"AI-Powered Security Solutions", location:"Berlin, Germany", hosts:["Dr. Thomas Lee"], details:["#"], featured:["BlackHat EU"]},
+      {id:11, date:"2025-06-12", title:"Vision Summit", description:"Foundation Models for Vision", location:"Paris, France", hosts:["Prof. Laurent"], details:["#"], featured:["CVF"]},
+      {id:12, date:"2025-05-30", title:"Data+AI Day", description:"Vector DBs in Production", location:"Austin, TX", hosts:["Panel"], details:["#"], featured:["MLOps"]},
+      {id:13, date:"2025-05-10", title:"NLP Meetup", description:"Efficient Fine-tuning", location:"Remote", hosts:["Community"], details:["#"], featured:["HF Spaces"]},
+      {id:14, date:"2025-04-22", title:"Open Source Day", description:"Contributing to Model Tooling", location:"Remote", hosts:["Maintainers"], details:["#"], featured:["OSS"]},
+      {id:15, date:"2025-03-18", title:"Systems Conf", description:"Observability for LLM Apps", location:"Chicago, IL", hosts:["Panel"], details:["#"], featured:["AppObs"]},
+      {id:16, date:"2025-02-14", title:"Evaluation Workshop", description:"Taxonomy for AI Evaluation", location:"Virtual", hosts:["Guest"], details:["#"], featured:["EvalHub"]},
+      {id:17, date:"2025-01-22", title:"Hack Night", description:"RAG Pipeline Diagnostics", location:"Houston, TX", hosts:["Facilitators"], details:["#"], featured:["Hackers"]},
+      {id:18, date:"2024-12-02", title:"Prompt Robustness", description:"Red-team & Mitigations", location:"Remote", hosts:["Guest"], details:["#"], featured:["Workshop"]},
+    ];
+
+    function isUpcoming(iso){ return new Date(iso).setHours(0,0,0,0) >= today.getTime(); }
+    function fmtDate(iso){ return new Date(iso).toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'}); }
+
+    function split(list){
+      const up=[], past=[];
+      for(const e of list){ (isUpcoming(e.date)? up: past).push(e); }
+      up.sort((a,b)=> new Date(a.date)-new Date(b.date));      // asc
+      past.sort((a,b)=> new Date(b.date)-new Date(a.date));    // desc
+      return {up, past};
+    }
+
+    function paginate(list, page, per=PER_PAGE){
+      const total = Math.max(1, Math.ceil(list.length/per));
+      const p = Math.min(Math.max(1, page), total);
+      const start = (p-1)*per;
+      return {items: list.slice(start, start+per), page: p, total};
+    }
+
+    function createCard(e){
+      const hosts = (e.hosts||[]).join(', ') || '—';
+      const featured = (e.featured||[]).join(', ') || '—';
+      let links = Array.isArray(e.details) ? e.details.slice(0,7) : [];
+      // Ensure 2-5 links per card: pad with placeholders if needed, cap at 5
+      if (links.length < 2) {
+        while (links.length < 2) links.push('#');
+      }
+      if (links.length > 5) links = links.slice(0,5);
+      const linksEncoded = encodeURIComponent(JSON.stringify(links));
+      return `
+      <div class="bg-slate-800 rounded-xl p-6 card-hover">
+        <div class="flex items-center mb-4">
+          <div class="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
+            <i class="fas fa-calendar-alt text-2xl text-primary"></i>
+          </div>
+          <div class="flex-1">
+            <span class="text-xs font-semibold text-primary px-2 py-1 bg-primary/10 rounded-full">${fmtDate(e.date)}</span>
+            <h3 class="text-lg md:text-xl font-bold mt-2">${escapeHtml(e.title)}</h3>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div><h4 class="text-sm font-semibold text-slate-400">Description</h4><p class="text-slate-200">${escapeHtml(e.description||'—')}</p></div>
+          <div><h4 class="text-sm font-semibold text-slate-400">Location</h4><p class="text-slate-200">${escapeHtml(e.location||'—')}</p></div>
+          <div><h4 class="text-sm font-semibold text-slate-400">Hosts</h4><p class="text-slate-200">${escapeHtml(hosts)}</p></div>
+          <div><h4 class="text-sm font-semibold text-slate-400">Featured</h4><p class="text-slate-200">${escapeHtml(featured)}</p></div>
+          <div><h4 class="text-sm font-semibold text-slate-400">Details URL(s)</h4>
+            <p class="text-slate-200 flex flex-wrap gap-3 items-center">
+              ${links.length ? links.map((u,i)=>`<a href="${escapeAttr(u)}" target="_blank" rel="noopener" class="text-primary hover:text-primary/80 inline-flex items-center gap-2"><i class=\"fas fa-link\"></i>Link ${i+1}</a>`).join('') : '—'}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center justify-end mt-4 pt-4 border-t border-slate-700">
+          <button type="button" class="conf-details-btn text-primary hover:text-primary/80 underline" data-links="${linksEncoded}" data-title="${escapeAttr(e.title)}">Conference Details</button>
+        </div>
+      </div>`;
+    }
+
+    function renderPager(container, page, total, onGo){
+      container.innerHTML = '';
+      if (total <= 1) return;
+      const mk = (label, p, current=false) => {
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 rounded-lg ${current ? 'bg-primary text-white' : 'bg-slate-700 text-white hover:bg-slate-600'} transition-colors`;
+        btn.textContent = label;
+        btn.addEventListener('click', ()=> onGo(p));
+        return btn;
+      }
+      const prev = Math.max(1, page-1), next = Math.min(total, page+1);
+      container.appendChild(mk('◀ Prev', prev, false));
+      const windowSize = 5;
+      let start = Math.max(1, page - Math.floor(windowSize/2));
+      let end = Math.min(total, start + windowSize - 1);
+      start = Math.max(1, end - windowSize + 1);
+      for(let p=start; p<=end; p++) container.appendChild(mk(String(p), p, p===page));
+      container.appendChild(mk('Next ▶', next, false));
+    }
+
+    function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
+    function escapeAttr(s){return String(s).replace(/['"<>]/g,'')}
+
+    const state = { tab:'upcoming', pageUp:1, pagePast:1 };
+
+    function render(){
+      const {up, past} = split(EVENTS);
+
+      // Upcoming
+      const upPag = paginate(up, state.pageUp, PER_PAGE);
+      document.getElementById('upcoming-grid').innerHTML = upPag.items.map(createCard).join('');
+      document.getElementById('empty-upcoming').classList.toggle('hidden', up.length !== 0);
+      renderPager(document.getElementById('pager-upcoming'), upPag.page, upPag.total, (p)=>{ state.pageUp = p; render(); });
+
+      // Past
+      const pastPag = paginate(past, state.pagePast, PER_PAGE);
+      document.getElementById('past-grid').innerHTML = pastPag.items.map(createCard).join('');
+      document.getElementById('empty-past').classList.toggle('hidden', past.length !== 0);
+      renderPager(document.getElementById('pager-past'), pastPag.page, pastPag.total, (p)=>{ state.pagePast = p; render(); });
+    }
+
+    function setTab(tab){
+      if (state.tab === tab) return;
+      state.tab = tab;
+      document.getElementById('panel-upcoming').classList.toggle('hidden', tab !== 'upcoming');
+      document.getElementById('panel-past').classList.toggle('hidden', tab !== 'past');
+
+      document.getElementById('tab-upcoming').classList.toggle('bg-primary', tab === 'upcoming');
+      document.getElementById('tab-upcoming').classList.toggle('bg-slate-700', tab !== 'upcoming');
+      document.getElementById('tab-past').classList.toggle('bg-primary', tab === 'past');
+      document.getElementById('tab-past').classList.toggle('bg-slate-700', tab !== 'past');
+    }
+
+    document.getElementById('tab-upcoming').addEventListener('click', ()=> setTab('upcoming'));
+    document.getElementById('tab-past').addEventListener('click', ()=> setTab('past'));
+
+    // Initial
+    setTab('upcoming'); // default
+    render();
+
+    // -------- Tiny self-checks (console) --------
+    (function tests(){
+      const {past} = split(EVENTS);
+      const ok = [];
+      ok.push(['past-desc', past.length<2 || new Date(past[0].date) >= new Date(past[1].date)]);
+      ok.push(['per-page-9', paginate(past,1,9).items.length <= 9 && paginate(past,2,9).items.length <= 9]);
+      ok.push(['card-has-fields', /Details URL\(s\)/.test(createCard(EVENTS[0]))]);
+      const fails = ok.filter(([_,pass])=>!pass).map(([name])=>name);
+      if (fails.length) console.warn('[Events tests] failing:', fails); else console.log('[Events tests] all passed');
+    })();
+  </script>
 </body>
 </html>
