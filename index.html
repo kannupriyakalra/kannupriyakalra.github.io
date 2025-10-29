@@ -15,35 +15,53 @@
           fontFamily: { sans: ['Inter', 'sans-serif'] },
         }
       }
-    }
+    };
   </script>
 
- 
-
+  <!-- Safe-guarded legacy popup (no-op unless DOM exists) -->
   <script>
     (function(){
       const popup = document.getElementById('conf-popup');
       const titleEl = document.getElementById('conf-popup-title');
       const linksEl = document.getElementById('conf-popup-links');
+      const copyBtn = document.getElementById('conf-copy');
+      const openBtn = document.getElementById('conf-open');
+      const openSameBtn = document.getElementById('conf-open-same');
+      if(!popup || !titleEl || !linksEl || !copyBtn || !openBtn || !openSameBtn){ return; }
       let activeLinks = [];
-
       function showPopup(x,y, title, links){
         titleEl.textContent = title || 'Conference Details';
         linksEl.innerHTML = '';
         activeLinks = Array.isArray(links) ? links : [];
         if(activeLinks.length === 0){ linksEl.innerHTML = '<div class="text-slate-400">No links available</div>'; }
-        else activeLinks.forEach((u,i)=>{
-          const a = document.createElement('a'); a.href = u; a.textContent = (u.length>60? u.slice(0,57)+'...' : u); a.target='_blank'; a.rel='noopener'; a.style.color='var(--text)'; a.style.textDecoration='underline'; a.style.padding='4px 0'; linksEl.appendChild(a);
+        else activeLinks.forEach((u)=>{
+          try{
+            // create favicon-only anchor chip
+            const a = document.createElement('a');
+            a.className = 'ev-link-chip';
+            a.href = u; a.target = '_blank'; a.rel = 'noopener';
+            a.title = u; // keep full url on hover
+            const img = document.createElement('img'); img.alt = '';
+            img.loading = 'lazy';
+            try{ img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(u).host)}&sz=64`; }catch(e){ img.src = ''; }
+            a.appendChild(img);
+            linksEl.appendChild(a);
+          }catch(_){
+            // fallback: simple favicon anchor
+            const a = document.createElement('a');
+            a.className = 'ev-link-chip'; a.href = u; a.target = '_blank'; a.rel = 'noopener'; a.title = u;
+            const img = document.createElement('img'); img.alt = '';
+            img.loading = 'lazy'; img.src = '';
+            a.appendChild(img);
+            linksEl.appendChild(a);
+          }
         });
         popup.style.left = (x + 8) + 'px';
         popup.style.top = (y + 8) + 'px';
         popup.classList.remove('hidden');
       }
-
       function hidePopup(){ popup.classList.add('hidden'); activeLinks = []; }
-
       document.addEventListener('click', function(e){
-        // Delegate to Conference Details buttons
         const btn = e.target.closest && e.target.closest('.conf-details-btn');
         if(btn){
           e.preventDefault();
@@ -53,30 +71,17 @@
           showPopup(rect.left + window.scrollX, rect.bottom + window.scrollY, title, links);
           return;
         }
-        // Click outside popup -> hide
         if(!e.target.closest || !e.target.closest('#conf-popup')) hidePopup();
       }, true);
-
-      // Buttons
-      document.getElementById('conf-copy').addEventListener('click', ()=>{
-        if(!activeLinks.length) return;
-        const text = activeLinks.join('\n');
-        navigator.clipboard.writeText(text).then(()=>{ alert('Link(s) copied'); hidePopup(); }, ()=>{ alert('Copy failed'); });
-      });
-      document.getElementById('conf-open').addEventListener('click', ()=>{
-        if(!activeLinks.length) return; window.open(activeLinks[0], '_blank'); hidePopup();
-      });
-      document.getElementById('conf-open-same').addEventListener('click', ()=>{
-        if(!activeLinks.length) return; window.location.href = activeLinks[0];
-      });
-
-      // ESC to close
+      copyBtn && copyBtn.addEventListener('click', ()=>{ if(!activeLinks.length) return; navigator.clipboard.writeText(activeLinks.join('\n')).then(hidePopup); });
+      openBtn && openBtn.addEventListener('click', ()=>{ if(!activeLinks.length) return; window.open(activeLinks[0], '_blank'); hidePopup(); });
+      openSameBtn && openSameBtn.addEventListener('click', ()=>{ if(!activeLinks.length) return; window.location.href = activeLinks[0]; });
       document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') hidePopup(); });
     })();
   </script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
     :root { --icon-size:50px; --icon-bg:rgba(255,255,255,.95); }
     @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
     .floating-icons-container{position:absolute;width:280px;height:280px;top:50%;left:50%;transform:translate(-50%,-50%)}
@@ -102,15 +107,148 @@
     .btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(14,165,233,.3)}
     .social-icon{transition:all .3s ease}
     .social-icon:hover{transform:translateY(-3px)}
-
-    /* Compact upcoming cards (3 inline on md+) */
     #upcoming-grid{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:1.25rem}
     @media (min-width:768px){#upcoming-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    #upcoming-grid .bg-slate-800.rounded-xl.p-6{padding:.75rem;min-height:240px}
-    #upcoming-grid .w-16.h-16{width:3rem;height:3rem}
-    #upcoming-grid .fas.fa-calendar-alt{font-size:1.05rem}
-    #upcoming-grid h3{font-size:1rem;margin-top:.25rem}
-    #upcoming-grid .space-y-3>div p{font-size:.95rem}
+  </style>
+
+  <!-- Responsive Events/Timeline styles (scoped) -->
+  <style>
+    #conf-events{
+      --bg:#0b0f14;--text:#e5e7eb;--muted:#94a3b8;--accent:#3b82f6;--line:#334155;
+      --card:#111827;--card2:#0f172a;--radius:16px;
+      --shadow:0 10px 28px rgba(0,0,0,.35);
+      --ring:#1f2937; --ring-strong:#334155;
+      --gap:26px; --dot:16px;
+      --fs-12:clamp(11px, .72vw, 12px);
+      --fs-14:clamp(12px, .8vw, 14px);
+      --fs-16:clamp(14px, .95vw, 16px);
+      --fs-18:clamp(16px, 1.05vw, 18px);
+    }
+    @media (prefers-reduced-motion: reduce){
+      #conf-events *{animation: none !important; transition: none !important;}
+    }
+    #conf-events *{box-sizing:border-box}
+    #conf-events .ev-wrap{padding:clamp(16px,2vw,30px)}
+    #conf-events .ev-controls{display:flex;justify-content:center;margin:8px 0 18px}
+    #conf-events .ev-segmented{display:inline-flex;background:#111827;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--ring)}
+    #conf-events .ev-segmented button{
+      border:0;background:transparent;color:var(--muted);
+      padding:10px 16px;cursor:pointer;font-weight:700;font-size:var(--fs-14);min-width:94px
+    }
+    #conf-events .ev-segmented button[aria-pressed="true"]{background:var(--accent);color:white}
+
+    #conf-events .ev-timeline{
+      position:relative;display:grid;grid-template-columns:1fr minmax(12px,48px) 1fr;
+      gap:var(--gap); align-items:start
+    }
+    #conf-events .ev-timeline::before{
+      content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:3px;height:100%;
+      background:linear-gradient(180deg,#1f2937,#334155);border-radius:999px
+    }
+    #conf-events .ev-mid{grid-column:2/3;display:flex;align-items:center;justify-content:center;z-index:1}
+    #conf-events .ev-dot{width:var(--dot);height:var(--dot);border-radius:50%;background:var(--accent);
+      box-shadow:0 0 0 2px #0ea5e9,0 0 0 8px rgba(14,165,233,.15)}
+    #conf-events .ev-side-left{grid-column:1/2}
+    #conf-events .ev-side-right{grid-column:3/4}
+    #conf-events .ev-empty{grid-column:auto}
+
+    #conf-events .ev-card{
+      position:relative; /* for flag badge */
+      overflow:hidden;
+      background:linear-gradient(180deg,var(--card),var(--card2));
+      border:1px solid var(--ring);border-radius:var(--radius);
+      box-shadow:var(--shadow);padding:16px 16px 14px;transition:transform .2s ease, box-shadow .2s ease
+    }
+    #conf-events .ev-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(59,130,246,.2)}
+    #conf-events .ev-title{margin:0 0 4px;font-size:var(--fs-18);font-weight:800}
+    #conf-events .ev-meta{font-size:var(--fs-14);color:var(--muted)}
+    #conf-events .ev-desc{margin-top:6px;color:#cbd5e1;font-size:var(--fs-14);line-height:1.5}
+    #conf-events .ev-btn{
+      margin-top:10px;background:var(--accent);border:0;color:#fff;border-radius:12px;
+      padding:10px 14px;cursor:pointer;font-weight:700;font-size:var(--fs-14)
+    }
+    #conf-events .ev-btn:hover{filter:brightness(1.1)}
+    #conf-events .ev-btn-ghost{background:transparent;border:1px solid var(--ring-strong);color:#e5e7eb}
+
+    /* Flag badge */
+    #conf-events .ev-flag-badge{
+      position:absolute;top:10px;right:10px;
+      display:inline-flex;align-items:center;gap:6px;
+      background:rgba(15,23,42,0.9);
+      border:1px solid #334155;border-radius:999px;
+      padding:5px 10px;box-shadow:0 4px 12px rgba(0,0,0,0.3)
+    }
+    #conf-events .ev-flag-badge img{
+      width:20px;height:15px;border-radius:3px;display:block
+    }
+    #conf-events .ev-flag-text{font-size:12px;color:#cbd5e1;letter-spacing:.5px}
+
+    /* Modal / sheet */
+    #conf-events .ev-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:60}
+    #conf-events .ev-backdrop[aria-hidden="false"]{display:flex}
+    #conf-events .ev-modal{
+      background:#0f172a;border:1px solid var(--ring);border-radius:20px;box-shadow:0 28px 80px rgba(0,0,0,.55);
+      width:min(96vw,980px);max-height:92vh;overflow:auto;transform:translateY(0)
+    }
+    #conf-events .ev-modal .content{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px}
+    #conf-events .ev-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--ring)}
+    #conf-events .ev-modal-header h3{margin:0;font-size:var(--fs-18)}
+    #conf-events .ev-drag-handle{display:none}
+
+  /* Carousel container: fixed aspect and overflow hidden; center the image inside */
+  #conf-events .ev-carousel{position:relative;border:1px solid var(--ring);border-radius:14px;overflow:hidden;background:#0b1220;display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;max-height:60vh}
+  #conf-events .ev-carousel img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;object-position:center}
+    #conf-events .ev-nav-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.45);border:1px solid #334155;color:#e5e7eb;border-radius:10px;padding:8px 12px;cursor:pointer}
+    #conf-events .ev-nav-btn.left{left:8px}
+    #conf-events .ev-nav-btn.right{right:8px}
+    #conf-events .ev-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    #conf-events .ev-thumbs button{border:1px solid #334155;background:#0b1220;border-radius:8px;cursor:pointer}
+    #conf-events .ev-thumbs img{width:min(22vw,90px);height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:7px;display:block}
+    #conf-events .ev-thumbs button[aria-current="true"]{outline:2px solid var(--accent)}
+
+  #conf-events .ev-links{display:flex;flex-wrap:wrap;gap:8px;max-height:96px;overflow:hidden;padding-right:6px;align-items:center}
+    #conf-events .ev-link-chip{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;gap:0;border:1px solid var(--ring);background:#0b1220;border-radius:8px;padding:4px;text-decoration:none;color:#bfdbfe;min-height:0}
+    #conf-events .ev-link-chip:hover{border-color:#334155;background:#0b1320}
+    #conf-events .ev-link-chip img{width:20px;height:20px;border-radius:4px;display:block}
+    #conf-events .ev-link-badge{margin-left:auto;font-size:11px;color:#e5e7eb;background:#1f2937;border:1px solid #334155;border-radius:999px;padding:3px 8px}
+  #conf-events .ev-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--ring)}
+
+    /* Meta grid inside modal (definition list) */
+    #conf-events .ev-meta-grid{display:grid;grid-template-columns:160px 1fr;gap:10px 14px;margin:6px 0}
+    #conf-events .ev-meta-grid dt{color:#94a3b8;font-weight:700}
+    #conf-events .ev-meta-grid dd{margin:0;color:#e5e7eb}
+
+    @media (max-width: 1024px){
+      #conf-events .ev-timeline{grid-template-columns:1fr 40px 1fr;gap:20px}
+      #conf-events .ev-modal .content{grid-template-columns:1fr;gap:14px}
+    }
+    @media (max-width: 768px){
+      #conf-events .ev-timeline{grid-template-columns:1fr;gap:16px}
+      #conf-events .ev-timeline::before{left:10px;width:3px}
+      #conf-events .ev-side-left,#conf-events .ev-side-right,#conf-events .ev-empty,#conf-events .ev-mid{grid-column:1/-1}
+      #conf-events .ev-mid{justify-content:flex-start}
+      #conf-events .ev-card{padding:14px;border-radius:14px}
+
+      #conf-events .ev-backdrop{align-items:flex-end;justify-content:stretch}
+      #conf-events .ev-modal{
+        width:100vw;max-height:88vh;border-radius:18px 18px 0 0;
+        border-left:none;border-right:none;
+        transform:translateY(6px);
+      }
+      #conf-events .ev-drag-handle{
+        display:block;width:60px;height:5px;border-radius:999px;background:#3b3b4b;opacity:.7;margin-right:auto;margin-left:auto
+      }
+      #conf-events .ev-modal-header{padding:10px 14px}
+      #conf-events .ev-modal .content{padding:12px}
+  /* Slightly wider aspect on narrow modal layout */
+  #conf-events .ev-carousel{aspect-ratio:16/9}
+      #conf-events .ev-thumbs img{width:22vw}
+      #conf-events .ev-links{max-height:220px}
+      #conf-events .ev-btn{padding:12px 14px}
+      #conf-events .ev-nav-btn{padding:8px 10px}
+      #conf-events .ev-flag-badge{top:8px;right:8px;padding:4px 8px}
+      #conf-events .ev-flag-badge img{width:18px;height:13px}
+    }
   </style>
 </head>
 <body class="bg-dark text-slate-200">
@@ -118,14 +256,11 @@
   <nav class="fixed w-full bg-darker/80 backdrop-blur-sm z-50 shadow-lg">
     <div class="container mx-auto px-6 py-4">
       <div class="flex items-center justify-between">
-        <!-- Left: mobile menu toggle -->
         <div class="flex items-center md:hidden">
           <button id="menu-toggle" class="text-slate-200 hover:text-primary focus:outline-none" aria-label="Toggle menu">
             <i class="fas fa-bars text-2xl"></i>
           </button>
         </div>
-
-        <!-- Center: nav links (centered on desktop) -->
         <div class="flex-1 flex justify-center">
           <div class="hidden md:flex space-x-8 items-center">
             <a href="#home" class="nav-link active">Home</a>
@@ -135,25 +270,13 @@
             <a href="#contact" class="nav-link">Contact</a>
           </div>
         </div>
-
-        <!-- Right: social/media icons (desktop) -->
         <div class="hidden md:flex items-center space-x-4">
-          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary text-slate-200" aria-label="GitHub">
-            <i class="fab fa-github"></i>
-          </a>
-          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="LinkedIn">
-            <i class="fab fa-linkedin-in"></i>
-          </a>
-          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-400 text-slate-200" aria-label="Twitter">
-            <i class="fab fa-twitter"></i>
-          </a>
-          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Dribbble">
-            <i class="fab fa-dribbble"></i>
-          </a>
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary text-slate-200" aria-label="GitHub"><i class="fab fa-github"></i></a>
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="https://x.com/KannupriyaKalra" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-400 text-slate-200" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Dribbble"><i class="fab fa-dribbble"></i></a>
         </div>
       </div>
-
-      <!-- Mobile Menu (kept below for flow) -->
       <div id="mobile-menu" class="hidden md:hidden mt-4 pb-2">
         <a href="#home" class="block py-2 nav-link active">Home</a>
         <a href="#about" class="block py-2 nav-link">About</a>
@@ -167,6 +290,18 @@
   <!-- Hero -->
   <section id="home" class="min-h-screen flex items-center pt-20">
     <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between">
+      <div class="md:w-1/2 flex justify-center">
+        <div class="relative w-80 h-80 md:w-[28rem] md:h-[28rem] lg:w-[36rem] lg:h-[36rem]">
+          <!--<div class="floating-icons-container">
+            <div class="floating-icon orbit-1 text-2xl text-blue-500 hidden md:block"><i class="fab fa-react"></i></div>
+            <div class="floating-icon orbit-2 text-2xl text-yellow-500 hidden md:block"><i class="fab fa-js"></i></div>
+            <div class="floating-icon orbit-3 text-2xl text-blue-600 hidden md:block"><i class="fab fa-css3-alt"></i></div>
+            <div class="floating-icon orbit-4 text-2xl text-orange-500 hidden md:block"><i class="fab fa-html5"></i></div>
+          </div>-->
+          <div class="absolute -inset-12 md:-inset-8 lg:-inset-16 rounded-full bg-gradient-to-br from-primary to-secondary blur-3xl opacity-30"></div>
+          <img src="images/Kannu_Hero_3.jpg" alt="Profile" class="relative w-full h-full object-cover rounded-full border-4 border-slate-800 floating">
+        </div>
+      </div>
       <div class="md:w-1/2 mb-12 md:mb-0 md:pr-6 lg:pr-8">
         <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4">Hi, I'm <span class="gradient-text">Kannupriya</span></h1>
         <h2 class="text-2xl md:text-3xl lg:text-4xl font-semibold mb-6 text-slate-300">Engineering Leader</h2>
@@ -174,20 +309,8 @@
         <div class="flex mt-8 space-x-4">
           <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary"><i class="fab fa-github"></i></a>
           <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600"><i class="fab fa-linkedin-in"></i></a>
-          <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-400"><i class="fab fa-twitter"></i></a>
+          <a href="https://x.com/KannupriyaKalra" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-400"><i class="fab fa-twitter"></i></a>
           <a href="#" class="social-icon text-xl w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600"><i class="fab fa-dribbble"></i></a>
-        </div>
-      </div>
-      <div class="md:w-1/2 flex justify-center">
-        <div class="relative w-80 h-80 md:w-[28rem] md:h-[28rem] lg:w-[36rem] lg:h-[36rem]">
-          <div class="floating-icons-container">
-            <div class="floating-icon orbit-1 text-2xl text-blue-500 hidden md:block"><i class="fab fa-react"></i></div>
-            <div class="floating-icon orbit-2 text-2xl text-yellow-500 hidden md:block"><i class="fab fa-js"></i></div>
-            <div class="floating-icon orbit-3 text-2xl text-blue-600 hidden md:block"><i class="fab fa-css3-alt"></i></div>
-            <div class="floating-icon orbit-4 text-2xl text-orange-500 hidden md:block"><i class="fab fa-html5"></i></div>
-          </div>
-          <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-secondary blur-xl opacity-20"></div>
-          <img src="images/priya_hero_2.png" alt="Profile" class="relative w-full h-full object-cover rounded-full border-4 border-slate-800 floating">
         </div>
       </div>
     </div>
@@ -201,20 +324,14 @@
         <div class="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto"></div>
       </div>
       <div class="flex flex-col md:flex-row items-center">
-        <div class="md:w-1/3 mb-8 md:mb-0 flex justify-center">
-          <div class="relative w-80 h-96 md:w-96 md:h-[30rem]">
-            <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-secondary blur-xl opacity-20"></div>
-            <img src="images/priya_about.png" alt="About" class="relative w-full h-full object-cover rounded-2xl shadow-2xl">
-          </div>
-        </div>
         <div class="md:w-2/3 md:pl-12">
           <h3 class="text-2xl font-bold mb-6">Who am I?</h3>
           <p class="text-slate-400 mb-6">I’m a dedicated engineering leader with 10+ years of experience designing reliable, high-performance systems. I specialize in functional Scala, AI platforms, and scalable backend development.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
-              <h4 class="font-semibold mb-2">Name: <span class="text-slate-300">Kannupriya, Karla</span></h4>
-              <h4 class="font-semibold mb-2">Email: <span class="text-slate-300">Kannupriyakarla@gmail.com</span></h4>
-              <h4 class="font-semibold mb-2">Phone: <span class="text-slate-300">+1 (555) 123-4567</span></h4>
+              <h4 class="font-semibold mb-2">Name: <span class="text-slate-300">Kannupriya, Kalra</span></h4>
+              <h4 class="font-semibold mb-2">Email: <span class="text-slate-300">Kannupriyakalra@gmail.com</span></h4>
+              <h4 class="font-semibold mb-2">Phone: <span class="text-slate-300">+44 772-170-4265</span></h4>
             </div>
             <div>
               <h4 class="font-semibold mb-2"><span class="text-slate-300"></span></h4>
@@ -223,15 +340,20 @@
             </div>
           </div>
           <div class="flex space-x-4">
-            <a href="#" class="px-6 py-3 rounded-full btn-primary font-medium">Download CV</a>
             <a href="#contact" class="px-6 py-3 rounded-full border border-primary text-primary font-medium hover:bg-primary/10 transition">Contact Me</a>
+          </div>
+        </div>
+        <div class="md:w-1/3 mb-8 md:mb-0 flex justify-center">
+          <div class="relative w-80 h-96 md:w-96 md:h-[30rem]">
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to secondary blur-xl opacity-20"></div>
+            <img src="images/priya_about.png" alt="About" class="relative w-full h-full object-cover rounded-2xl shadow-2xl">
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Events / Conferences (dynamic) -->
+  <!-- Events / Conferences — Responsive + Bottom Sheet on Mobile -->
   <section id="events" class="py-20 bg-dark">
     <div class="container mx-auto px-6">
       <div class="text-center mb-10">
@@ -239,67 +361,173 @@
         <div class="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto"></div>
       </div>
 
-      <!-- Tabs -->
-      <div class="flex justify-center gap-3 mb-8">
-        <button id="tab-upcoming" class="px-6 py-2 rounded-full bg-primary text-white transition-colors">Upcoming</button>
-        <button id="tab-past" class="px-6 py-2 rounded-full bg-slate-700 text-white hover:bg-primary transition-colors">Past</button>
-      </div>
+      <!-- SCOPE START -->
+      <div id="conf-events" class="max-w-[1200px] mx-auto">
+        <div class="ev-wrap">
+          <div class="ev-controls">
+            <div class="ev-segmented" role="group" aria-label="Filter timeline">
+              <button data-filter="upcoming" aria-pressed="false">Upcoming</button>
+              <button data-filter="past" aria-pressed="false">Past</button>
+              <button data-filter="all" aria-pressed="true">All</button>
+            </div>
+          </div>
 
-      <!-- Grids -->
-      <div id="panel-upcoming">
-        <div id="upcoming-grid" class="grid grid-cols-1 md:grid-cols-3 gap-5"></div>
-        <p id="empty-upcoming" class="text-center text-slate-400 mt-6 hidden">No upcoming events.</p>
-        <div id="pager-upcoming" class="flex justify-center mt-8 gap-2"></div>
-      </div>
+          <section id="ev-timeline" class="ev-timeline" aria-live="polite"></section>
 
-      <div id="panel-past" class="hidden">
-        <div id="past-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        <p id="empty-past" class="text-center text-slate-400 mt-6 hidden">No past events.</p>
-        <div id="pager-past" class="flex justify-center mt-8 gap-2"></div>
+          <!-- Backdrop / Sheet -->
+          <div class="ev-backdrop" id="ev-backdrop" aria-hidden="true">
+            <div class="ev-modal" role="dialog" aria-modal="true" aria-labelledby="ev-event-title" aria-describedby="ev-event-desc">
+              <header class="ev-modal-header">
+                <div class="ev-drag-handle" aria-hidden="true"></div>
+                <h3 id="ev-event-title">Event</h3>
+                <button class="ev-btn ev-btn-ghost" id="ev-modal-close" aria-label="Close">✕</button>
+              </header>
+
+              <div class="content">
+                <div>
+                  <div class="ev-carousel" id="ev-carousel">
+                    <img id="ev-carousel-img" alt="Event image" src="" loading="lazy"/>
+                    <button class="ev-nav-btn left" id="ev-car-prev" aria-label="Previous" style="display:none">◀</button>
+                    <button class="ev-nav-btn right" id="ev-car-next" aria-label="Next" style="display:none">▶</button>
+                  </div>
+                </div>
+
+                <div>
+                  <dl class="ev-meta-grid">
+                    <dt>Date</dt><dd id="ev-meta-date">—</dd>
+                    <dt>Event/Conference</dt><dd id="ev-meta-event">—</dd>
+                    <dt>Talk Title</dt><dd id="ev-meta-talk">—</dd>
+                    <dt>Location</dt><dd id="ev-meta-location">—</dd>
+                    <dt>Speaker</dt><dd id="ev-meta-speaker">—</dd>
+                    <dt>Featured In</dt><dd id="ev-meta-featured">—</dd>
+                    <dt>Recording</dt><dd id="ev-meta-recording">—</dd>
+                    <dt>Details URL(s)</dt><dd><div class="ev-links" id="ev-meta-links"></div></dd>
+                  </dl>
+                  <p class="ev-desc" id="ev-event-desc"></p>
+                </div>
+              </div>
+
+              <div class="ev-actions">
+                <div>
+                  <button class="ev-btn ev-btn-ghost" id="ev-view-ppt" aria-label="View presentation" style="display:none">View PPT</button>
+                </div>
+                <div>
+                  <button class="ev-btn" id="ev-watch-recording">Watch recording</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+      <!-- SCOPE END -->
     </div>
   </section>
 
-  <!-- Contact (Let's Talk) -->
+  <!-- Projects (dummy examples) -->
+  <section id="projects" class="py-20 bg-dark">
+    <div class="container mx-auto px-6">
+      <div class="text-center mb-10">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Selected <span class="gradient-text">Projects</span></h2>
+        <div class="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto"></div>
+      </div>
+
+  <div>
+    <!-- Projects grid (toolbar removed per request) -->
+    <!-- Grid -->
+    <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Card: Realtime Analytics -->
+      <article class="project-card p-4 rounded-lg flex flex-col md:flex-row gap-4 projects-item" data-tags="Scala, LLMs, GenAI">
+        <div class="md:w-1/2 h-56 md:h-auto overflow-hidden rounded-lg bg-slate-900">
+          <img src="images/llm4s_logo.png" alt="Realtime Analytics Dashboard" class="proj-img w-full h-full object-cover" loading="lazy">
+        </div>
+        <div class="md:w-1/2 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xl font-bold mb-2">Type-Safe LLM Framework</h3>
+            <p class="text-slate-400 mb-4">A type-safe, functional Scala framework for building scalable, production-grade LLM and agentic applications featuring multi-provider support, RAG tooling, multimodal generation, observability, and seamless JVM ecosystem integration.</p>
+            <div class="flex flex-wrap gap-2 mb-3">
+              <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">Scala</span>
+              <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">LLMs</span>
+              <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">GenAI</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="https://github.com/llm4s/llm4s" class="proj-github-btn px-4 py-2 rounded-full btn-primary text-sm" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </article>
+
+      <!-- 
+      <article class="project-card p-4 rounded-lg flex flex-col md:flex-row gap-4 projects-item" data-tags="rust,wasm">
+        <div class="md:w-1/2 h-56 md:h-auto overflow-hidden rounded-lg bg-slate-900">
+          <img src="images/project-placeholder-2.jpg" alt="Privacy-Preserving Search" class="proj-img w-full h-full object-cover" loading="lazy">
+        </div>
+        <div class="md:w-1/2 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xl font-bold mb-2">Privacy-Preserving Search</h3>
+            <p class="text-slate-400 mb-4">A privacy-first document search engine using encrypted indices and local query processing to avoid sending raw documents to servers.</p>
+            <div class="flex flex-wrap gap-2 mb-3">
+              <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">Rust</span>
+              <span class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300">WASM</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="#" class="proj-github-btn px-4 py-2 rounded-full btn-primary text-sm" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </article>
+      Card: Privacy-Preserving Search -->
+
+      <!-- (Only two projects shown) -->
+
+    </div>
+  </div>
+    </div>
+  </section>
+
+  <!-- Project details modal removed: project popups replaced by direct GitHub CTAs -->
+
+  <!-- Contact -->
   <section id="contact" class="py-28 bg-darker">
     <div class="container mx-auto px-6">
       <div class="flex flex-col lg:flex-row items-center justify-between">
-        <!-- Left large heading/text -->
         <div class="lg:w-2/3 mb-10 lg:mb-0">
           <p class="text-lg text-slate-300 mb-4">I'm excited to connect and collaborate with you on innovative strategies that will shape the future of your brand.</p>
           <h2 class="text-6xl lg:text-8xl font-extrabold leading-tight">Let's Talk <span class="gradient-text ml-3">↗</span></h2>
         </div>
-
-        <!-- Right: contact email + social icons -->
         <div class="lg:w-1/3 flex flex-col items-start lg:items-end">
-          <a href="mailto:Kannupriyakarla@gmail.com" class="flex items-center text-lg text-slate-200 hover:text-primary mb-6">
+          <a href="mailto:Kannupriyakalra@gmail.com" class="flex items-center text-lg text-slate-200 hover:text-primary mb-6">
             <span class="inline-flex items-center justify-center w-12 h-12 mr-3 rounded-lg bg-slate-800 text-2xl"><i class="fas fa-envelope"></i></span>
-            Kannupriyakarla@gmail.com
+            Kannupriyakalra@gmail.com
           </a>
           <div class="flex items-center gap-4">
-            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-primary text-slate-200" aria-label="X/Twitter"><i class="fab fa-x-twitter"></i></a>
-            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            <a href="https://x.com/KannupriyaKalra" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Instagram"><i class="fa-brands fa-twitter"></i></a>
+            <a href="https://bsky.app/profile/kannupriyakalra.bsky.social" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="bluesky"><i class="fa-brands fa-blogger-b"></i></a>
+            <a href="https://functional.cafe/@kannupriyakalra" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-red-600 text-slate-200" aria-label="YouTube"><i class="fa-solid fa-f"></i></a>
+            <a href="https://www.reddit.com/user/kannupriyakalra/" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-600 text-slate-200" aria-label="Bookmarks"><i class="fa-brands fa-reddit-alien"></i></a>
+          </div>
+          <br>
+          <div class="flex items-center gap-4">
+            <a href="https://github.com/kannupriyakalra" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-pink-600 text-slate-200" aria-label="Instagram"><i class="fa-brands fa-github"></i></a>
+            <a href="https://www.linkedin.com/in/kannupriyakalra/" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-blue-600 text-slate-200" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
             <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-red-600 text-slate-200" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-            <a href="#" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-600 text-slate-200" aria-label="Bookmarks"><i class="fas fa-bookmark"></i></a>
+            <a href="discordto:kannupriyakalra_46520" class="social-icon w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-600 text-slate-200" aria-label="Bookmarks"><i class="fa-brands fa-discord"></i></a>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
+  <!-- Footer with 8 icons -->
   <footer class="bg-darker py-12">
     <div class="container mx-auto px-6">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="mb-6 md:mb-0">
-          <p class="text-slate-400 mt-2">© 2025 Kannupriya Karla. All rights reserved.</p>
+      <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="text-center md:text-left">
+          <p class="text-slate-400 mt-2">© 2025 Kannupriya Kalra. All rights reserved.</p>
         </div>
-        <div class="flex space-x-6">
-          <a href="#" class="text-slate-400 hover:text-primary transition"><i class="fab fa-github text-xl"></i></a>
-          <a href="#" class="text-slate-400 hover:text-blue-600 transition"><i class="fab fa-linkedin-in text-xl"></i></a>
-          <a href="#" class="text-slate-400 hover:text-blue-400 transition"><i class="fab fa-twitter text-xl"></i></a>
-          <a href="#" class="text-slate-400 hover:text-pink-600 transition"><i class="fab fa-dribbble text-xl"></i></a>
+        <div class="flex space-x-6"> 
+          <a href="#" class="text-slate-400 hover:text-primary transition"><i class="fab fa-github text-xl"></i></a> <a href="#" class="text-slate-400 hover:text-blue-600 transition"><i class="fab fa-linkedin-in text-xl"></i></a> 
+          <a href="https://x.com/KannupriyaKalra" class="text-slate-400 hover:text-blue-400 transition"><i class="fab fa-twitter text-xl"></i></a> 
+          <a href="#" class="text-slate-400 hover:text-pink-600 transition"><i class="fab fa-dribbble text-xl"></i></a> 
         </div>
       </div>
       <div class="border-t border-slate-800 mt-8 pt-8 text-center text-slate-500">
@@ -308,17 +536,13 @@
     </div>
   </footer>
 
-  <!-- Back to Top -->
-  <button id="back-to-top" class="fixed bottom-8 right-8 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-lg hidden">
-    <i class="fas fa-arrow-up"></i>
-  </button>
+  <button id="back-to-top" class="fixed bottom-8 right-8 w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white shadow-lg hidden"><i class="fas fa-arrow-up"></i></button>
 
+  <!-- Global nav + back-to-top -->
   <script>
-    // --- Basic nav + back-to-top ---
     const menuToggle = document.getElementById('menu-toggle');
     const mobileMenu = document.getElementById('mobile-menu');
     menuToggle.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
-
     document.querySelectorAll('a[href^="#"]').forEach(a=>{
       a.addEventListener('click', e=>{
         e.preventDefault();
@@ -332,7 +556,6 @@
         if (link) link.classList.add('active');
       });
     });
-
     window.addEventListener('scroll', ()=>{
       const y = window.scrollY;
       document.querySelectorAll('section').forEach(s=>{
@@ -343,167 +566,401 @@
       });
       document.getElementById('back-to-top').classList.toggle('hidden', y <= 300);
     });
-
     document.getElementById('back-to-top').addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+  </script>
 
-    // ---------------- Events logic ----------------
-    const PER_PAGE = 9;
-    const today = new Date(); today.setHours(0,0,0,0);
+  <!-- Events component script with FlagCDN flags -->
+  <script>
+    (function(){
+      /* ---- Data ---- */
+      const EVENTS = [
+        {id:1,event:"Bay Area Scala",talk:"Let's Teach LLMs to Write Great Scala! (Original version)",date:"2025-02-25",status:"past",country:"US",city:"Tubi office, San Francisco, CA",speaker:"Kannupriya Kalra",details:["https://luma.com/5fz2y9or","https://www.reddit.com/r/scala/comments/1ipr596/scala_meetup_san_francisco_designing_the_library/?share_id=3IdgjEpmpDcwoIFgNOy1d&utm_content=1&utm_medium=android_app&utm_name=androidcss&utm_source=share&utm_term=3","https://social.softinio.com/@softinio/statuses/01JM3MD5H0R4ZS5CHXN37S878E","https://bsky.app/profile/salarrahmanian.bsky.social/post/3li6lh3funk2q","https://x.com/SalarRahmanian/status/1890575797947388070","https://www.meetup.com/scala-bay/events/306178503/?eventOrigin=group_past_events"],recording:"https://www.youtube.com/watch?v=SXybj2P3_DE&t=779s",featured:["-"],photos:["images/events/Bay Area Scala/BayAreaScalaConference_tubiOffice.jpeg", "images/events/Bay Area Scala/BayAreaScalaConference_GenAiSlide.jpeg", "images/events/Bay Area Scala/BayAreaScalaConference_IntroSlide.jpg"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf",tags:["LLMs","Scala", "Teach"]},
 
-    // Schema: id, date(YYYY-MM-DD), title, description, location, hosts[], details[] (<=7), featured[]
-    const EVENTS = [
-      // UPCOMING (examples)
-      {id:101, date:"2025-12-15", title:"ICSE 2025", description:"Advanced Software Engineering Methodologies in AI Era", location:"Nashville, TN", hosts:["Dr. John Smith"], details:["https://conf.example.com/icse2025"], featured:["ACM DL","IEEE Xplore"]},
-      {id:102, date:"2025-11-28", title:"AI Summit 2025", description:"The Future of AI in Education: A New Paradigm", location:"Stanford University, CA", hosts:["Dr. Sarah Johnson"], details:["https://conf.example.com/ai-summit-2025"], featured:["Nature AI","Science Digital"]},
-      {id:103, date:"2025-11-10", title:"Global Tech Forum", description:"Building Scalable Systems for the Next Decade", location:"Tokyo, Japan", hosts:["Dr. Emily Chen"], details:["https://conf.example.com/gtf2025"], featured:["Tech Proceedings","Digital Archives"]},
+        
 
-      // PAST (18 items to guarantee 2 pages)
-      {id:1, date:"2025-10-15", title:"DevOps Summit", description:"Modern DevOps Practices in Cloud Native Applications", location:"Seattle, WA", hosts:["Dr. Michael Zhang"], details:["#"], featured:["CNCF"]},
-      {id:2, date:"2025-10-05", title:"ML Conference", description:"Advances in Neural Network Architectures", location:"Cambridge, MA", hosts:["Dr. Lisa Anderson"], details:["#"], featured:["NeurOnline"]},
-      {id:3, date:"2025-09-25", title:"Web Security Conference", description:"Zero-Trust Architecture Implementation", location:"London, UK", hosts:["Dr. James Wilson"], details:["#"], featured:["OWASP"]},
-      {id:4, date:"2025-09-15", title:"Cloud Native Summit", description:"Scaling Microservices Architecture", location:"Singapore", hosts:["Dr. Robert Chang"], details:["#"], featured:["Kubernetes"]},
-      {id:5, date:"2025-08-25", title:"Data Science Forum", description:"LLMs: Present and Future", location:"Stanford, CA", hosts:["Dr. Sarah Lee"], details:["#"], featured:["DSJ"]},
-      {id:6, date:"2025-08-15", title:"Edge Computing Summit", description:"Edge AI Implementation Strategies", location:"Tokyo, Japan", hosts:["Dr. Michael Brown"], details:["#"], featured:["SIGMobile"]},
-      {id:7, date:"2025-07-25", title:"Quantum Computing Forum", description:"Quantum Algorithms for ML", location:"Cambridge, MA", hosts:["Dr. Elena Rodriguez"], details:["#"], featured:["QML"]},
-      {id:8, date:"2025-07-15", title:"Blockchain Conference", description:"Enterprise Blockchain Solutions", location:"Dubai, UAE", hosts:["Dr. David Kim"], details:["#"], featured:["LedgerWorks"]},
-      {id:9, date:"2025-07-05", title:"AI Ethics Symposium", description:"Responsible AI Development", location:"Oxford, UK", hosts:["Dr. Maria Chen"], details:["#"], featured:["RAI"]},
-      {id:10, date:"2025-06-25", title:"Security Conference", description:"AI-Powered Security Solutions", location:"Berlin, Germany", hosts:["Dr. Thomas Lee"], details:["#"], featured:["BlackHat EU"]},
-      {id:11, date:"2025-06-12", title:"Vision Summit", description:"Foundation Models for Vision", location:"Paris, France", hosts:["Prof. Laurent"], details:["#"], featured:["CVF"]},
-      {id:12, date:"2025-05-30", title:"Data+AI Day", description:"Vector DBs in Production", location:"Austin, TX", hosts:["Panel"], details:["#"], featured:["MLOps"]},
-      {id:13, date:"2025-05-10", title:"NLP Meetup", description:"Efficient Fine-tuning", location:"Remote", hosts:["Community"], details:["#"], featured:["HF Spaces"]},
-      {id:14, date:"2025-04-22", title:"Open Source Day", description:"Contributing to Model Tooling", location:"Remote", hosts:["Maintainers"], details:["#"], featured:["OSS"]},
-      {id:15, date:"2025-03-18", title:"Systems Conf", description:"Observability for LLM Apps", location:"Chicago, IL", hosts:["Panel"], details:["#"], featured:["AppObs"]},
-      {id:16, date:"2025-02-14", title:"Evaluation Workshop", description:"Taxonomy for AI Evaluation", location:"Virtual", hosts:["Guest"], details:["#"], featured:["EvalHub"]},
-      {id:17, date:"2025-01-22", title:"Hack Night", description:"RAG Pipeline Diagnostics", location:"Houston, TX", hosts:["Facilitators"], details:["#"], featured:["Hackers"]},
-      {id:18, date:"2024-12-02", title:"Prompt Robustness", description:"Red-team & Mitigations", location:"Remote", hosts:["Guest"], details:["#"], featured:["Workshop"]},
-    ];
+        {id:2,event:"Scala India",talk:"Let's Teach LLMs to Write Great Scala! (Updated from Feb 2025)",date:"2025-04-20",status:"past",country:"IN",city:"India",speaker:"Kannupriya Kalra",details:["https://www.linkedin.com/posts/activity-7318299169914249216-Sec-/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM","https://www.reddit.com/r/scala/comments/1k0r1c7/upcoming_scala_india_talk_on_topic_lets_teach/?share_id=aPCwPdh0wOkxuPfsU7f3j&utm_content=1&utm_medium=android_app&utm_name=androidcss&utm_source=share&utm_term=3","https://x.com/themightysid888/status/1912758284509134866"],recording:"https://youtu.be/PiUaVKuV0dM?si=0Tjce1i5A5IdVYL_",featured:["-"],photos:["images/events/Scala India/ScalaIndia_Talk_Banner.png", "images/events/Scala India/2.png", "images/events/Scala India/3.png"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf",tags:["LLMs","Scala", "Teach"]},
 
-    function isUpcoming(iso){ return new Date(iso).setHours(0,0,0,0) >= today.getTime(); }
-    function fmtDate(iso){ return new Date(iso).toLocaleDateString(undefined,{year:'numeric', month:'long', day:'numeric'}); }
+        {id:3,event:"Functional World 2025 by Scalac",talk:"Let's Teach LLMs to Write Great Scala! (Updated from Apr 2025)",date:"2025-05-28",status:"past",country:"PL",city:"Gdansk, Poland",speaker:"Kannupriya Kalra",details:["https://www.linkedin.com/events/7326538222593839104/", "https://www.linkedin.com/posts/scalac_lets-teach-llms-to-write-great-scala-ugcPost-7332752921190625281-K2YD/", "https://www.reddit.com/r/scala/comments/1krvvgv/meetup_lets_teach_llms_to_write_great_scala/", "https://www.meetup.com/functionalworld/events/307654612/?eventOrigin=group_upcoming_events", "https://x.com/FunctionalWorld/status/1920776605015674943"],recording:"https://www.youtube.com/watch?v=cNAmsIpSsgk&ab_channel=Scalac",featured:["https://www.linkedin.com/pulse/scalendar-may-2025-scalac-qck6e/?trackingId=aSO5CkxeSB2O0U4GPUxJuw%3D%3D", "https://scalatimes.com/ead904f5c2", "https://scalatimes.com/af935bf2d5"],photos:["images/events/Functional World 2025 by Scalac/Scalac_FunctionalWorld2025_Poland.png", "images/events/Functional World 2025 by Scalac/1.png", "images/events/Functional World 2025 by Scalac/2.png", "images/events/Functional World 2025 by Scalac/3.png", "images/events/Functional World 2025 by Scalac/4.png", "images/events/Functional World 2025 by Scalac/5.png"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf"},
 
-    function split(list){
-      const up=[], past=[];
-      for(const e of list){ (isUpcoming(e.date)? up: past).push(e); }
-      up.sort((a,b)=> new Date(a.date)-new Date(b.date));      // asc
-      past.sort((a,b)=> new Date(b.date)-new Date(a.date));    // desc
-      return {up, past};
-    }
+        {id:4,event:"Dallas Scala Enthusiasts",talk:"Let's Teach LLMs to Write Great Scala! (Updated from May 2025)",date:"2025-06-13",status:"past",country:"US",city:"Dallas, Texas, USA ",speaker:"Kannupriya Kalra",details:["https://www.meetup.com/dallas-scala-enthusiasts/events/307717420/?eventOrigin=find_page%24all", "https://www.linkedin.com/posts/kannupriyakalra_scala-ai-llm4s-activity-7338339521807212544-t5gT","https://x.com/KannupriyaKalra/status/1932864594025836700","https://www.reddit.com/r/scala/comments/1l9iheb/talk_llm4s_talk_in_dallas_scala_meets_ai_june_13/","https://bsky.app/profile/kannupriyakalra.bsky.social/post/3lrfuplb3oc2n","https://functional.cafe/@kannupriyakalra/114672918629990024"],recording:"https://www.youtube.com/watch?v=-PnsSSWTye0&ab_channel=DallasScalaEnthusiasts",featured:["https://www.linkedin.com/pulse/scalendar-june-2025-scalac-fmiwe/?trackingId=ifE4kllzPvQvBqItbqXL4w%3D%3D"],photos:["images/events/Dallas Scala Enthusiasts/DallasScalaEnthusiastsConference_Talk_Banner.png","images/events/Dallas Scala Enthusiasts/1.png","images/events/Dallas Scala Enthusiasts/2.png","images/events/Dallas Scala Enthusiasts/3.png","images/events/Dallas Scala Enthusiasts/4.png","images/events/Dallas Scala Enthusiasts/5.png"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf"},
 
-    function paginate(list, page, per=PER_PAGE){
-      const total = Math.max(1, Math.ceil(list.length/per));
-      const p = Math.min(Math.max(1, page), total);
-      const start = (p-1)*per;
-      return {items: list.slice(start, start+per), page: p, total};
-    }
+        {id:5,event:"London Scala Users Group",talk:"Scala Meets GenAI: Build the Cool Stuff with LLM4S",date:"2025-08-13",status:"past",country:"GB",city:"The Trade Desk office, London",speaker:"Kannupriya Kalra, Rory Graves",details:["https://www.meetup.com/london-scala/events/308564399/?utm_medium=email&utm_campaign=rsvp-confirmation-social","https://x.com/KannupriyaKalra/status/1949925385992622131","https://bsky.app/profile/kannupriyakalra.bsky.social/post/3lv2g77b2yk2s","https://www.linkedin.com/posts/kannupriyakalra_scala-genai-llms-activity-7357084500595482626-CxBe?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM"],recording:"",featured:["https://www.linkedin.com/pulse/scalendar-august-2025-scalac-cxoje/?trackingId=c5MNCnKeSOeff0LojUz0ug%3D%3D"],photos:["images/events/London Scala Users Group/LondonScalaTalks_LLM4S_talk_2025_Banner.png","images/events/London Scala Users Group/LondonScalaTalks_2025_Banner.jpg", "images/events/London Scala Users Group/LondonScalaTalks_2025_Rory_szork_demo.jpeg", "images/events/London Scala Users Group/LondonScalaTalks_2025_kannupriya_multimodal_slide.jpeg","images/events/London Scala Users Group/LondonScalaTalks_2025_Flyer.jpg"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf"},
 
-    function createCard(e){
-      const hosts = (e.hosts||[]).join(', ') || '—';
-      const featured = (e.featured||[]).join(', ') || '—';
-      let links = Array.isArray(e.details) ? e.details.slice(0,7) : [];
-      // Ensure 2-5 links per card: pad with placeholders if needed, cap at 5
-      if (links.length < 2) {
-        while (links.length < 2) links.push('#');
+        {id:6,event:"Scala Days 2025",talk:"Scala Meets GenAI: Build the Cool Stuff with LLM4S",date:"2025-08-21",status:"past",country:"CH",city:"SwissTech Convention Center,EPFL campus, Lausanne, Switzerland",speaker:"Kannupriya Kalra, Rory Graves",details:["https://scaladays.org/editions/2025/talks/scala-meets-genai-build-the","https://www.linkedin.com/feed/update/urn:li:activity:7348123421945262080/","https://x.com/KannupriyaKalra/status/1942369453267947900","https://www.reddit.com/r/scala/comments/1lua1ud/talk_llm4s_at_scala_days_2025_scala_meets_genai/","https://bsky.app/profile/kannupriyakalra.bsky.social/post/3ltfyhmlsi22p","https://functional.cafe/@kannupriyakalra/114814671581110365"],recording:"",featured:["https://scalac.io/blog/scala-days-2025-august-lausanne-code-community-innovation/","https://www.linkedin.com/pulse/scalendar-august-2025-scalac-cxoje/?trackingId=c5MNCnKeSOeff0LojUz0ug%3D%3D","https://www.linkedin.com/posts/scalac_scala-scalac-scaladays2025-activity-7359538627879571456-5YKa?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM","https://www.linkedin.com/posts/scalac_scala-days-2025-highlights-our-key-takeaways-activity-7370816575886483456-3g6w?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM","https://www.linkedin.com/posts/scalac_scala-days-2025-ugcPost-7364632095945547778-8sAk?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM","https://scalac.io/blog/scala-days-2025-recap-a-scala-community-reunion/","https://xebia.com/blog/scala-days-2025-ai-integration/"],photos:["images/events/Scala Days 2025/ScalaDays2025_Talk_Banner.jpg","images/events/Scala Days 2025/scaladays2025-llm4s-team.jpg"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf"},
+
+        {id:7,event:"Zürich Scala Enthusiasts",talk:"Fork It Till You Make It: Career Building with Scala OSS",date:"2025-08-25",status:"past",country:"CH",city:"Rivero AG, ABB Historic Building, Elias-Canetti-Strasse 7, Zürich, Switzerland",speaker:"Kannupriya Kalra",details:["https://lnkd.in/emMVS8Mj","https://www.linkedin.com/posts/kannupriyakalra_scala-opensource-llm4s-activity-7354152797799342080-O_ik","https://x.com/KannupriyaKalra/status/1948388464837226568","https://bsky.app/profile/kannupriyakalra.bsky.social/post/3lupqmo2z722j","https://functional.cafe/@kannupriyakalra/114908674646390403","https://www.reddit.com/r/scala/comments/1m867vu/zurich_career_growth_through_scala_oss_join_our/"],recording:"",featured:["https://www.linkedin.com/pulse/scalendar-august-2025-scalac-cxoje/?trackingId=c5MNCnKeSOeff0LojUz0ug%3D%3D"],photos:["images/events/Zürich Scala Enthusiasts/ZurichScalaEnthusiasts_2025_Banner.jpg"],ppt:"https://example.com/slides/bay-area-scala-slides.pdf"},
+
+        {id:8,event:"Scala Center Talks",talk:"Lightning Talks Powered by GSoC 2025 for Scala",date:"2025-09-18",status:"past",country:"CH",city:"EPFL campus, Lausanne, Switzerland",speaker:"Kannupriya Kalra",details:["https://luma.com/3eda0rsz","https://www.linkedin.com/posts/davidgilmendez_lightning-talks-powered-by-gsoc-2025-activity-7373294561311391746-9gpG?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM","https://x.com/KannupriyaKalra/status/1968408400330416301","https://functional.cafe/@kannupriyakalra/115221495411735909","https://bsky.app/profile/kannupriyakalra.bsky.social/post/3lz2oedo5rs2o","https://www.reddit.com/r/scala/comments/1nk2t4b/event_today_scala_center_org_google_summer_of/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"],recording:"",featured:[],photos:["images/events/Scala Center Talks/GSoC_2025_Lighting_talks_switzerland.jpg"],ppt:""},
+
+        {id:9,event:"ICFP/SPLASH 2025 (The Scala Workshop 2025)",talk:"Mentoring in the Scala Ecosystem: Insights from Google Summer of Code",date:"2025-10-12",status:"past",country:"SG",city:"Peony West, Marina Bay Sands Convention Center, Singapore",speaker:"Kannupriya Kalra",details:["https://conf.researchr.org/home/icfp-splash-2025","https://2025.workshop.scala-lang.org/#program","https://www.linkedin.com/posts/kannupriyakalra_icfp2025-splash2025-functionalprogramming-activity-7379263313022730240-5uOk?utm_source=share&utm_medium=member_desktop&rcm=ACoAAA8qk7UBmvcZ2O7aAJfMpsdEXBvcKSNiHWM","https://x.com/KannupriyaKalra/status/1973507011003424968","https://functional.cafe/@kannupriyakalra/115301118970199281","https://bsky.app/profile/kannupriyakalra.bsky.social/post/3m25zmx47nc2u","https://www.reddit.com/r/scala/comments/1o5g0wn/announcement_paper_presentation_at_icfpsplash/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button"],recording:"https://www.youtube.com/live/OtFPJNFJSsA?si=XIg9LM2OaRBuXR2C&t=26236",featured:[],photos:["images/events/ICFPSPLASH 2025 (The Scala Workshop 2025)/ICFP2025_Mentoring_in_the_Scala_Ecosystem_Insights_from_GSoC_Kannupriya_Kalra.png"],ppt:""},
+
+        {id:10,event:"GEN AI London 2025",talk:"Building Reliable AI systems: From Hype to Practical Toolkits",date:"2025-10-24",status:"past",country:"GB",city:"Queen Elizabeth II Center in the City of Westminster, London",speaker:"Kannupriya Kalra",details:["https://www.genailondon.uk/speakers","https://www.genailondon.uk/programme","https://www.linkedin.com/posts/genailondon_genailondon-genailondon2025-genailondonspeaker-ugcPost-7385254431333883904-1eZk?utm_source=share&utm_medium=member_desktop&rcm=ACoAADmu6soBQhs2fe8_CNIw2ChlNe0Oon4E3G0","https://www.linkedin.com/posts/kannupriyakalra_genai-genai-ai-activity-7387419483914522624--NfX?utm_source=share&utm_medium=member_desktop&rcm=ACoAADmu6soBQhs2fe8_CNIw2ChlNe0Oon4E3G0","https://www.linkedin.com/posts/kannupriyakalra_genailondon2025-genailondon-activity-7387421709043204096-yUJs?utm_source=share&utm_medium=member_desktop&rcm=ACoAADmu6soBQhs2fe8_CNIw2ChlNe0Oon4E3G0","https://x.com/KannupriyaKalra/status/1981647405071368231","https://functional.cafe/@kannupriyakalra/115428352731873350","https://www.reddit.com/r/scala/comments/1oexkzw/announcement_my_mentor_is_going_to_talk_at_genai/"],recording:"",featured:[],photos:["images/events/GEN AI London 2025/Banner_GenAI_London_Building_Reliable_AI_Systems__From_Hype_to_Practical_Toolkits_Kannupriya_Kalra.png"],ppt:"ppts/Kannupriya_Kalra_GenAI_London_Building Reliable AI Systems_From_Hype_to_Practical_Toolkits.pdf"},
+
+        {id:11,event:"Google Summer Of Code Mentor Summit 2025",talk:"LLM4S x GSoC 2025: Engineering GenAI Agents in Functional Scala",date:"2025-10-25",status:"past",country:"DE",city:"Google Office, Munich Erika-Mann-Str. 33 · 80636 München, Germany",speaker:"Kannupriya Kalra",details:["https://sites.google.com/view/2025mentorsummit/home"],recording:"https://www.youtube.com/live/OtFPJNFJSsA?si=XIg9LM2OaRBuXR2C&t=26236",featured:[],photos:["images/events/Google Summer Of Code Mentor Summit 2025/Banner_LLM4S x GSoC 2025 Engineering GenAI Agents in Functional Scala_Kannupriya_Kalra.png"],ppt:"ppts/GSoC_2025_Lightning_Talk_Mentor_Summit_Slides_Germany.pptx"},
+
+
+      ];
+
+      /* ---- Elements ---- */
+      const scope = document.getElementById('conf-events');
+      const tl = document.getElementById('ev-timeline');
+      const backdrop = document.getElementById('ev-backdrop');
+      const els = {
+        close: document.getElementById('ev-modal-close'),
+        title: document.getElementById('ev-event-title'),
+        desc: document.getElementById('ev-event-desc'),
+        date: document.getElementById('ev-meta-date'),
+        event: document.getElementById('ev-meta-event'),
+        talk: document.getElementById('ev-meta-talk'),
+        location: document.getElementById('ev-meta-location'),
+        speaker: document.getElementById('ev-meta-speaker'),
+        featured: document.getElementById('ev-meta-featured'),
+        recording: document.getElementById('ev-meta-recording'),
+        links: document.getElementById('ev-meta-links'),
+        carImg: document.getElementById('ev-carousel-img'),
+        carPrev: document.getElementById('ev-car-prev'),
+        carNext: document.getElementById('ev-car-next'),
+          carousel: document.getElementById('ev-carousel'),
+        viewPpt: document.getElementById('ev-view-ppt'),
+        watchRecording: document.getElementById('ev-watch-recording'),
+        modal: document.querySelector('#ev-backdrop .ev-modal')
+      };
+
+      /* ---- Helpers ---- */
+      const fmt = iso => new Date(iso+'T00:00:00').toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+      const escapeHtml = s => String(s||'').replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+      // FlagCDN (all ISO countries)
+      function flagURL(code){
+        const cc = String(code || '').toLowerCase();
+        return cc ? `https://flagcdn.com/${cc}.svg` : '';
       }
-      if (links.length > 5) links = links.slice(0,5);
-      const linksEncoded = encodeURIComponent(JSON.stringify(links));
-      return `
-      <div class="bg-slate-800 rounded-xl p-6 card-hover">
-        <div class="flex items-center mb-4">
-          <div class="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mr-4">
-            <i class="fas fa-calendar-alt text-2xl text-primary"></i>
-          </div>
-          <div class="flex-1">
-            <span class="text-xs font-semibold text-primary px-2 py-1 bg-primary/10 rounded-full">${fmtDate(e.date)}</span>
-            <h3 class="text-lg md:text-xl font-bold mt-2">${escapeHtml(e.title)}</h3>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <div><h4 class="text-sm font-semibold text-slate-400">Description</h4><p class="text-slate-200">${escapeHtml(e.description||'—')}</p></div>
-          <div><h4 class="text-sm font-semibold text-slate-400">Location</h4><p class="text-slate-200">${escapeHtml(e.location||'—')}</p></div>
-          <div><h4 class="text-sm font-semibold text-slate-400">Hosts</h4><p class="text-slate-200">${escapeHtml(hosts)}</p></div>
-          <div><h4 class="text-sm font-semibold text-slate-400">Featured</h4><p class="text-slate-200">${escapeHtml(featured)}</p></div>
-          <div><h4 class="text-sm font-semibold text-slate-400">Details URL(s)</h4>
-            <p class="text-slate-200 flex flex-wrap gap-3 items-center">
-              ${links.length ? links.map((u,i)=>`<a href="${escapeAttr(u)}" target="_blank" rel="noopener" class="text-primary hover:text-primary/80 inline-flex items-center gap-2"><i class=\"fas fa-link\"></i>Link ${i+1}</a>`).join('') : '—'}
-            </p>
-          </div>
-        </div>
-        <div class="flex items-center justify-end mt-4 pt-4 border-t border-slate-700">
-          <button type="button" class="conf-details-btn text-primary hover:text-primary/80 underline" data-links="${linksEncoded}" data-title="${escapeAttr(e.title)}">Conference Details</button>
-        </div>
-      </div>`;
-    }
-
-    function renderPager(container, page, total, onGo){
-      container.innerHTML = '';
-      if (total <= 1) return;
-      const mk = (label, p, current=false) => {
-        const btn = document.createElement('button');
-        btn.className = `px-4 py-2 rounded-lg ${current ? 'bg-primary text-white' : 'bg-slate-700 text-white hover:bg-slate-600'} transition-colors`;
-        btn.textContent = label;
-        btn.addEventListener('click', ()=> onGo(p));
-        return btn;
+      function unsplashSet(ev){
+        const q = encodeURIComponent(ev.event || 'conference');
+        const base = n => `https://source.unsplash.com/800x600/?${q}&sig=${ev.id*13+n}`;
+        return [0,1,2].map(base);
       }
-      const prev = Math.max(1, page-1), next = Math.min(total, page+1);
-      container.appendChild(mk('◀ Prev', prev, false));
-      const windowSize = 5;
-      let start = Math.max(1, page - Math.floor(windowSize/2));
-      let end = Math.min(total, start + windowSize - 1);
-      start = Math.max(1, end - windowSize + 1);
-      for(let p=start; p<=end; p++) container.appendChild(mk(String(p), p, p===page));
-      container.appendChild(mk('Next ▶', next, false));
-    }
 
-    function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
-    function escapeAttr(s){return String(s).replace(/['"<>]/g,'')}
+  /* ---- State ---- */
+  let currentFilter = 'all';
+  // Carousel state: holds current images for the modal and the active index
+  let currentPhotos = [];
+  let currentPhotoIdx = 0;
+  // Autoplay state
+  let autoplayInterval = null;
+  const AUTOPLAY_DELAY = 3500; // ms
 
-    const state = { tab:'upcoming', pageUp:1, pagePast:1 };
+      /* ---- Render ---- */
+      function cardHTML(e){
+        const flag = flagURL(e.country);
+        return `
+          <article class='ev-card'>
+            <div class="ev-flag-badge" title="${escapeHtml(e.city || e.country || '')}">
+              ${flag ? `<img src="${flag}" alt="${escapeHtml(e.country)} flag" loading="lazy">` : ''}
+              <span class="ev-flag-text">${escapeHtml(String(e.country||'').toUpperCase())}</span>
+            </div>
+            <h3 class='ev-title'>${escapeHtml(e.event)}</h3>
+            <p class='ev-meta'>${fmt(e.date)} • ${escapeHtml(e.city)} • ${escapeHtml(e.speaker)}</p>
+            <p class='ev-desc'>${escapeHtml(e.talk)}</p>
+            <div><button class='ev-btn' data-id='${e.id}'>Details</button></div>
+          </article>`;
+      }
 
-    function render(){
-      const {up, past} = split(EVENTS);
+      function getFiltered(){
+        if(currentFilter==='upcoming') return EVENTS.filter(e=>e.status==='upcoming').sort((a,b)=> new Date(a.date)-new Date(b.date));
+        if(currentFilter==='past') return EVENTS.filter(e=>e.status!=='upcoming').sort((a,b)=> new Date(b.date)-new Date(a.date));
+        // 'all' — show upcoming first (nearest-first), then past (most-recent first)
+        const upcoming = EVENTS.filter(e=>e.status==='upcoming').slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
+        const past = EVENTS.filter(e=>e.status!=='upcoming').slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
+        return upcoming.concat(past);
+      }
 
-      // Upcoming
-      const upPag = paginate(up, state.pageUp, PER_PAGE);
-      document.getElementById('upcoming-grid').innerHTML = upPag.items.map(createCard).join('');
-      document.getElementById('empty-upcoming').classList.toggle('hidden', up.length !== 0);
-      renderPager(document.getElementById('pager-upcoming'), upPag.page, upPag.total, (p)=>{ state.pageUp = p; render(); });
+      function render(){
+        const list = getFiltered();
+        if(list.length===0){
+          // Friendly no-upcoming message when filter is 'upcoming'
+          if(currentFilter === 'upcoming'){
+            tl.innerHTML = `
+              <div style="grid-column:1/-1;padding:28px;text-align:center;color:#94a3b8;display:flex;flex-direction:column;align-items:center;gap:12px">
+                <div style="width:84px;height:84px;border-radius:12px;background:linear-gradient(180deg,#071025,#081427);display:flex;align-items:center;justify-content:center">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2v6" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 8h10" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="10" width="18" height="10" rx="2" stroke="#9CA3AF" stroke-width="1.25"/></svg>
+                </div>
+                <div style="max-width:720px">
+                  <h3 style="margin:0;color:#e5e7eb">No upcoming events — for now</h3>
+                  <p style="margin:6px 0 0;color:#9ca3af">Looks quiet at the moment. Good things are often worth waiting for — check back soon or view past events for highlights.</p>
+                </div>
+              </div>`;
+            return;
+          }
+          // generic fallback for other filters
+          tl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#94a3b8">No events</div>';
+          return;
+        }
+        let html = '';
+        for(let i=0;i<list.length;i++){
+          const e = list[i];
+          const mid = `<div class='ev-mid'><div class='ev-dot' aria-hidden='true'></div></div>`;
+          if (window.matchMedia('(max-width: 768px)').matches){
+            html += `<div class='ev-side-left'>${cardHTML(e)}</div>${mid}`;
+          } else if (i % 2 === 0){
+            html += `<div class='ev-side-left'>${cardHTML(e)}</div>${mid}<div class='ev-empty'></div>`;
+          } else {
+            html += `<div class='ev-empty'></div>${mid}<div class='ev-side-right'>${cardHTML(e)}</div>`;
+          }
+        }
+        tl.innerHTML = html;
+      }
 
-      // Past
-      const pastPag = paginate(past, state.pagePast, PER_PAGE);
-      document.getElementById('past-grid').innerHTML = pastPag.items.map(createCard).join('');
-      document.getElementById('empty-past').classList.toggle('hidden', past.length !== 0);
-      renderPager(document.getElementById('pager-past'), pastPag.page, pastPag.total, (p)=>{ state.pagePast = p; render(); });
-    }
+      /* ---- Modal / Sheet ---- */
+      function renderLinks(urls){
+        els.links.innerHTML = '';
+        (urls||[]).forEach(u=>{
+          try{
+            const a = document.createElement('a');
+            a.className = 'ev-link-chip'; a.href = u; a.target = '_blank'; a.rel = 'noopener'; a.title = u;
+            const img = document.createElement('img'); img.alt=''; img.loading='lazy';
+            try{ img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(u).host)}&sz=64`; }catch{ img.src=''; }
+            a.appendChild(img);
+            els.links.appendChild(a);
+          }catch(err){
+            const fallback = document.createElement('a'); fallback.className='ev-link-chip'; fallback.href = u; fallback.target = '_blank'; fallback.rel='noopener'; fallback.title = u;
+            const img = document.createElement('img'); img.alt=''; img.loading='lazy'; img.src=''; fallback.appendChild(img);
+            els.links.appendChild(fallback);
+          }
+        });
+      }
 
-    function setTab(tab){
-      if (state.tab === tab) return;
-      state.tab = tab;
-      document.getElementById('panel-upcoming').classList.toggle('hidden', tab !== 'upcoming');
-      document.getElementById('panel-past').classList.toggle('hidden', tab !== 'past');
+      // Carousel helpers: show single image or enable prev/next when multiple
+      function setPhoto(idx){
+        if(!currentPhotos || !currentPhotos.length){ els.carImg.src = ''; return; }
+        currentPhotoIdx = (idx + currentPhotos.length) % currentPhotos.length;
+        els.carImg.src = currentPhotos[currentPhotoIdx] || '';
+        els.carImg.loading = 'lazy';
+        // show or hide nav buttons depending on count
+        if(els.carPrev && els.carNext){
+          const show = currentPhotos.length > 1;
+          els.carPrev.style.display = show ? 'block' : 'none';
+          els.carNext.style.display = show ? 'block' : 'none';
+        }
+      }
 
-      document.getElementById('tab-upcoming').classList.toggle('bg-primary', tab === 'upcoming');
-      document.getElementById('tab-upcoming').classList.toggle('bg-slate-700', tab !== 'upcoming');
-      document.getElementById('tab-past').classList.toggle('bg-primary', tab === 'past');
-      document.getElementById('tab-past').classList.toggle('bg-slate-700', tab !== 'past');
-    }
+      // Autoplay helpers: start/stop the interval (runs only when >1 photo)
+      function startAutoplay(){
+        stopAutoplay();
+        if(!currentPhotos || currentPhotos.length <= 1) return;
+        autoplayInterval = setInterval(()=>{ setPhoto(currentPhotoIdx+1); }, AUTOPLAY_DELAY);
+      }
+      function stopAutoplay(){ if(autoplayInterval){ clearInterval(autoplayInterval); autoplayInterval = null; } }
 
-    document.getElementById('tab-upcoming').addEventListener('click', ()=> setTab('upcoming'));
-    document.getElementById('tab-past').addEventListener('click', ()=> setTab('past'));
+      // Pause/resume on hover or touch for the carousel image
+      if(els.carImg){
+        els.carImg.addEventListener('mouseenter', ()=> stopAutoplay());
+        els.carImg.addEventListener('mouseleave', ()=> { if(currentPhotos.length>1) startAutoplay(); });
+        els.carImg.addEventListener('touchstart', ()=> stopAutoplay(), {passive:true});
+        els.carImg.addEventListener('touchend', ()=> { if(currentPhotos.length>1) startAutoplay(); }, {passive:true});
+      }
 
-    // Initial
-    setTab('upcoming'); // default
-    render();
+      function openModal(id){
+        const e = EVENTS.find(x=>x.id===id); if(!e) return;
+        els.title.textContent = e.talk || e.event;
+        els.desc.textContent = e.desc || '';
+        els.date.textContent = fmt(e.date);
+        els.event.textContent = e.event;
+        els.talk.textContent = e.talk || '—';
+        els.location.textContent = e.city || '—';
+        els.speaker.textContent = e.speaker || '—';
+        // Render "Featured In" entries. If an entry is a URL, show a favicon-only link chip; otherwise show a small badge text.
+        (function renderFeatured(items){
+          const list = Array.isArray(items) ? items : (items ? [items] : []);
+          els.featured.innerHTML = '';
+          if(!list.length){ els.featured.textContent = '—'; return; }
+          const wrap = document.createElement('div'); wrap.style.display = 'flex'; wrap.style.gap = '8px'; wrap.style.flexWrap = 'wrap';
+          list.forEach(u=>{
+            try{
+              const url = new URL(u);
+              const a = document.createElement('a');
+              a.className = 'ev-link-chip'; a.href = u; a.target = '_blank'; a.rel = 'noopener'; a.title = u; a.setAttribute('aria-label', `Open featured link ${url.host}`);
+              const img = document.createElement('img'); img.alt = ''; img.loading = 'lazy';
+              try{ img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.host)}&sz=64`; }catch(e){ img.src = ''; }
+              a.appendChild(img);
+              wrap.appendChild(a);
+            }catch(_){
+              // Not a URL — render as a small badge
+              const span = document.createElement('span');
+              span.className = 'ev-link-badge'; span.textContent = String(u);
+              wrap.appendChild(span);
+            }
+          });
+          els.featured.appendChild(wrap);
+        })(e.featured || []);
+        els.recording.textContent = e.recording ? 'Available' : '—';
+        renderLinks(e.details||[]);
 
-    // -------- Tiny self-checks (console) --------
-    (function tests(){
-      const {past} = split(EVENTS);
-      const ok = [];
-      ok.push(['past-desc', past.length<2 || new Date(past[0].date) >= new Date(past[1].date)]);
-      ok.push(['per-page-9', paginate(past,1,9).items.length <= 9 && paginate(past,2,9).items.length <= 9]);
-      ok.push(['card-has-fields', /Details URL\(s\)/.test(createCard(EVENTS[0]))]);
-      const fails = ok.filter(([_,pass])=>!pass).map(([name])=>name);
-      if (fails.length) console.warn('[Events tests] failing:', fails); else console.log('[Events tests] all passed');
+        // Use carousel: set currentPhotos to all images if provided, otherwise a single Unsplash fallback
+        try{
+          currentPhotos = (e.photos && e.photos.length ? e.photos.slice() : [unsplashSet(e)[0]]).filter(Boolean);
+        }catch(err){ currentPhotos = [unsplashSet(e)[0]]; }
+  currentPhotoIdx = 0; setPhoto(0);
+  // Start autoplay if there are multiple photos
+  if(currentPhotos.length > 1) startAutoplay();
+
+        // Watch recording button: show and enable when present, otherwise keep visible but disabled
+        if(e.recording){
+          els.watchRecording.style.display = 'inline-block';
+          els.watchRecording.disabled = false;
+          els.watchRecording.removeAttribute('aria-disabled');
+          els.watchRecording.style.opacity = '';
+          els.watchRecording.title = 'Open recording';
+          els.watchRecording.textContent = 'Watch recording';
+          els.watchRecording.onclick = ()=> window.open(e.recording,'_blank');
+        } else {
+          // keep the button visible but disabled so users see the affordance
+          els.watchRecording.style.display = 'inline-block';
+          els.watchRecording.disabled = true;
+          els.watchRecording.setAttribute('aria-disabled','true');
+          els.watchRecording.style.opacity = '.6';
+          els.watchRecording.title = 'Recording will be available soon';
+          els.watchRecording.textContent = 'Available soon';
+          els.watchRecording.onclick = null;
+        }
+
+        // View PPT / slides button (support multiple common property names)
+        const pptUrl = e.ppt || e.slides || e.presentation || e.ppt_url || '';
+        if(pptUrl){
+          els.viewPpt.style.display = 'inline-block';
+          els.viewPpt.disabled = false;
+          els.viewPpt.removeAttribute('aria-disabled');
+          els.viewPpt.style.opacity = '';
+          els.viewPpt.title = 'Open slides';
+          els.viewPpt.textContent = 'View PPT';
+          els.viewPpt.onclick = ()=> window.open(pptUrl, '_blank');
+        } else {
+          // Mirror recording behavior: show but disable and indicate availability
+          if(els.viewPpt){
+            els.viewPpt.style.display = 'inline-block';
+            els.viewPpt.disabled = true;
+            els.viewPpt.setAttribute('aria-disabled','true');
+            els.viewPpt.style.opacity = '.6';
+            els.viewPpt.title = 'Slides will be available soon';
+            els.viewPpt.textContent = 'Available soon';
+            els.viewPpt.onclick = null;
+          }
+        }
+
+        backdrop.setAttribute('aria-hidden','false');
+        lockScroll(true);
+      }
+
+      function closeModal(){
+        // stop any running autoplay when closing
+        stopAutoplay();
+        backdrop.setAttribute('aria-hidden','true'); lockScroll(false);
+      }
+
+      // Scroll lock on sheet open (mobile)
+      const html = document.documentElement;
+      let prevOverflow = '';
+      function lockScroll(on){
+        if(on){ prevOverflow = html.style.overflow; html.style.overflow = 'hidden'; }
+        else { html.style.overflow = prevOverflow || ''; }
+      }
+
+      // Open/close handlers
+      tl.addEventListener('click', (e)=>{
+        const b = e.target.closest && e.target.closest('.ev-btn[data-id]');
+        if(b){ e.preventDefault(); openModal(+b.dataset.id); }
+      });
+      els.close.onclick = closeModal;
+      backdrop.onclick = (e)=>{ if(e.target===backdrop) closeModal(); };
+
+      // Prev/Next carousel handlers
+      if(els.carPrev) els.carPrev.onclick = ()=> setPhoto(currentPhotoIdx-1);
+      if(els.carNext) els.carNext.onclick = ()=> setPhoto(currentPhotoIdx+1);
+
+      // Keyboard: Escape closes; Left/Right navigate carousel when open and multiple images
+      document.addEventListener('keydown',(e)=>{
+        if(backdrop.getAttribute('aria-hidden')==='false'){
+          if(e.key==='Escape') closeModal();
+          if(e.key==='ArrowLeft' && currentPhotos.length>1) { setPhoto(currentPhotoIdx-1); }
+          if(e.key==='ArrowRight' && currentPhotos.length>1) { setPhoto(currentPhotoIdx+1); }
+        }
+      });
+
+      // Filters
+      scope.querySelectorAll('.ev-segmented button').forEach(btn=>{
+        btn.onclick = ()=>{
+          scope.querySelectorAll('.ev-segmented button').forEach(b=> b.setAttribute('aria-pressed','false'));
+          btn.setAttribute('aria-pressed','true');
+          currentFilter = btn.dataset.filter;
+          render();
+        };
+      });
+
+      // Swipe gestures: vertical drag on modal to dismiss, horizontal swipe on carousel to navigate
+      let startY = null, startX = null, dragging = false;
+      els.modal.addEventListener('touchstart', (e)=>{
+        if(!e.touches[0]) return;
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+        dragging = true;
+      }, {passive:true});
+      els.modal.addEventListener('touchmove', (e)=>{
+        if(!dragging || !e.touches[0]) return;
+        const dy = e.touches[0].clientY - startY;
+        const dx = e.touches[0].clientX - startX;
+        const topZone = e.target.closest('.ev-modal-header') || e.target.closest('.ev-drag-handle');
+        if(topZone && dy > 0){
+          els.modal.style.transform = `translateY(${Math.min(dy, 140)}px)`;
+        }
+        // If the gesture starts on the carousel and is mostly horizontal, use it to navigate
+        const onCarousel = e.target.closest && e.target.closest('.ev-carousel');
+        if(onCarousel && Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) && currentPhotos.length>1){
+          if(dx > 0){ setPhoto(currentPhotoIdx-1); startX = e.touches[0].clientX; }
+          else { setPhoto(currentPhotoIdx+1); startX = e.touches[0].clientX; }
+        }
+      }, {passive:true});
+      els.modal.addEventListener('touchend', ()=>{
+        if(!dragging) return;
+        const current = parseFloat((els.modal.style.transform || 'translateY(0px)').match(/-?\d+\.?\d*/)?.[0] || '0');
+        if(current > 90){ closeModal(); els.modal.style.transform = 'translateY(0)'; }
+        else { els.modal.style.transform = 'translateY(0)'; }
+        dragging = false; startY = null; startX = null;
+      });
+
+      // Re-render on resize to adapt columns
+      let rAF;
+      window.addEventListener('resize', ()=>{
+        cancelAnimationFrame(rAF);
+        rAF = requestAnimationFrame(render);
+      });
+
+      // Init
+      render();
     })();
+  </script>
+
+  <!-- Projects modal + helpers -->
+  <script>
+    // Image fallback: replace broken project images with a simple SVG placeholder
+    function makePlaceholderSVG(w=400,h=240,label='No image'){
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS,'svg');
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.setAttribute('width','100%'); svg.setAttribute('height','100%');
+      const rect = document.createElementNS(svgNS,'rect'); rect.setAttribute('width','100%'); rect.setAttribute('height','100%'); rect.setAttribute('fill','#0f172a');
+      const text = document.createElementNS(svgNS,'text'); text.setAttribute('x','50%'); text.setAttribute('y','50%'); text.setAttribute('fill','#9CA3AF'); text.setAttribute('font-size','20'); text.setAttribute('text-anchor','middle'); text.setAttribute('dominant-baseline','middle'); text.textContent = label;
+      svg.appendChild(rect); svg.appendChild(text);
+      return svg;
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      // Keep image fallback behavior for project images; project modal/popups removed.
+      document.querySelectorAll('img.proj-img').forEach(img=>{
+        img.addEventListener('error', ()=>{
+          const svg = makePlaceholderSVG(400,240,'No image');
+          img.replaceWith(svg);
+        });
+      });
+    });
   </script>
 </body>
 </html>
